@@ -8,7 +8,7 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -26,6 +26,13 @@
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            amberBrand: '#C2410C',
+            amberBrandHover: '#9A3412',
+            slateDark: '#1E293B',
+            redBrand: '#991B1B',
+            redBrandHover: '#7F1D1D'
           }
         }
       }
@@ -33,131 +40,145 @@
   </script>
 
   <style>
-    /* Custom Scrollbars */
+    /* Custom Slim Scrollbars */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: #f8fafc;
+      background: #F4F4F5;
     }
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: #D4D4D8;
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: #A1A1AA;
     }
 
     /* Vis.js Network Canvas */
     #network-canvas {
-      background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
+      background: #FFFFFF;
       width: 100%;
       height: 100%;
     }
 
-    /* Subtle minimalist dot grid */
-    .grid-bg {
-      background-size: 24px 24px;
-      background-image: radial-gradient(circle, #e2e8f0 1.2px, transparent 1.2px);
+    /* Custom range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #E4E4E7;
+      height: 4px;
+      border-radius: 2px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #1E293B;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
 
-    /* Row highlight pulse when distances update */
+    /* Subtle row update animation */
     @keyframes highlightRow {
-      0% { background-color: rgba(99, 102, 241, 0.25); }
+      0% { background-color: #F4F4F5; }
       100% { background-color: transparent; }
     }
     .row-updated {
-      animation: highlightRow 1.8s ease-out;
+      animation: highlightRow 1.4s ease-out;
     }
   </style>
 </head>
-<body class="bg-[#F9FAFB] text-slate-800 font-sans h-screen flex flex-col p-4 md:p-6 gap-4 overflow-hidden select-none">
+<body class="bg-[#F4F4F5] text-slate-800 font-sans h-screen flex flex-col p-3 md:p-4 gap-3 overflow-hidden select-none">
 
   <!-- Top Status Bar -->
-  <header class="h-14 bg-white shadow-sm border border-slate-200 rounded-xl flex items-center justify-between px-6 shrink-0 z-20">
+  <header class="h-14 bg-white border border-zinc-200 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
+    <!-- Left branding -->
     <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-sm">
-        <i class="fa-solid fa-diagram-project text-sm"></i>
+      <div class="w-7 h-7 rounded-lg bg-[#1E293B] text-white flex items-center justify-center text-xs shadow-xs">
+        <i class="fa-solid fa-diagram-project"></i>
       </div>
-      <div>
-        <h1 class="text-base font-semibold tracking-tight text-slate-800 flex items-center gap-2">
-          Distance Vector Routing
-          <span class="text-xs px-2 py-0.5 rounded-full font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
-            Bellman-Ford Simulator
-          </span>
-        </h1>
-      </div>
+      <h1 class="text-sm font-semibold tracking-tight text-[#1E293B]">
+        Distance Vector Routing Simulator
+      </h1>
     </div>
 
-    <!-- Status & Metrics Header -->
-    <div class="flex items-center space-x-3">
-      <div id="backend-badge" class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono">
-        <span class="w-2 h-2 rounded-full bg-slate-400" id="backend-dot"></span>
-        <span id="backend-status-text" class="text-slate-500">Connecting Backend...</span>
+    <!-- Right status pill tags -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Backend connection indicator -->
+      <div id="backend-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" id="backend-dot"></span>
+        <span id="backend-status-text" class="text-xs">Connected</span>
       </div>
 
-      <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
-        <span class="text-slate-500">Status:</span>
-        <span id="convergence-status" class="flex items-center gap-1.5 font-semibold text-amber-600">
-          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          Ready / Initializing
-        </span>
+      <!-- Convergence Status capsule -->
+      <div id="convergence-status" class="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-medium text-emerald-800">
+        <span class="text-xs text-zinc-500">Status:</span>
+        <span id="convergence-text">Converged</span>
       </div>
 
-      <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono">
-        <span class="text-slate-500">Step:</span>
-        <span id="step-counter" class="text-slate-900 font-bold">0</span>
+      <!-- Step Counter capsule -->
+      <div class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
+        <span class="text-xs text-zinc-500">Step:</span>
+        <span id="step-counter" class="font-semibold text-zinc-800">0</span>
       </div>
 
-      <button id="btn-reset-topology" title="Reset Network to initial loop" class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs border border-slate-200 transition-all duration-200 shadow-sm flex items-center gap-1.5 cursor-pointer">
-        <i class="fa-solid fa-rotate-left"></i> Reset Loop
+      <!-- Reset Loop button -->
+      <button id="btn-reset-topology" title="Reset Network to initial loop" class="px-2.5 py-1 rounded-md bg-white hover:bg-zinc-50 text-zinc-700 text-xs border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+        <i class="fa-solid fa-rotate-left text-zinc-500"></i>
+        <span>Reset Loop</span>
       </button>
     </div>
   </header>
 
   <!-- Main Workspace Area -->
-  <main class="flex-1 flex gap-4 overflow-hidden relative min-h-0">
+  <main class="flex-1 flex gap-3 overflow-hidden relative min-h-0">
 
-    <!-- Central Topology Canvas (Left / Center) -->
-    <section class="flex-1 h-full relative flex flex-col min-w-0 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <!-- Central Graph Canvas Card (Left / Center) -->
+    <section class="flex-1 h-full relative flex flex-col min-w-0 bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
       
-      <!-- Network Canvas Container -->
-      <div id="network-container" class="relative w-full h-full grid-bg">
+      <!-- Canvas container -->
+      <div id="network-container" class="relative w-full h-full bg-white">
         <div id="network-canvas"></div>
 
-        <!-- Canvas Floating Hints / Overlay Badges -->
-        <div class="absolute top-4 left-4 pointer-events-none flex flex-col gap-2 z-10">
-          <div class="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-slate-600 flex items-center gap-2 border border-slate-200 shadow-sm">
-            <i class="fa-solid fa-circle-nodes text-slate-700"></i>
-            <span>Physics Enabled: <strong class="text-slate-800">Drag nodes</strong> to float & repel</span>
+        <!-- Upper-Left Badges -->
+        <div class="absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
+          <div class="bg-white/95 px-2.5 py-1 rounded-md text-xs text-zinc-600 flex items-center gap-1.5 border border-zinc-200 shadow-xs">
+            <i class="fa-solid fa-arrows-up-down-left-right text-zinc-400 text-[10px]"></i>
+            <span>Drag nodes to configure</span>
           </div>
-          <div class="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-md text-[11px] text-slate-500 flex items-center gap-2 border border-slate-200 shadow-sm">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active Link
-            <span class="w-2 h-2 rounded-full bg-rose-500 ml-2"></span> Severed Link
+          <div class="bg-white/95 px-2.5 py-1 rounded-md text-[11px] text-zinc-500 flex items-center gap-2 border border-zinc-200 shadow-xs">
+            <span class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active Link
+            </span>
+            <span class="flex items-center gap-1 ml-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#991B1B]"></span> Severed Link
+            </span>
           </div>
         </div>
 
-        <!-- Quick Canvas Action Tools (Top Right) -->
-        <div class="absolute top-4 right-4 z-10 flex gap-2">
-          <button id="btn-toggle-physics" class="bg-white hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs text-slate-700 border border-slate-200 transition-all duration-200 flex items-center gap-1.5 shadow-sm cursor-pointer">
-            <i class="fa-solid fa-atom text-slate-500"></i>
+        <!-- Upper-Right Utility Controls -->
+        <div class="absolute top-3.5 right-4 z-10 flex gap-2">
+          <button id="btn-toggle-physics" class="bg-white hover:bg-zinc-50 px-2.5 py-1 rounded-md text-xs text-zinc-700 border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+            <i class="fa-solid fa-gear text-zinc-400 text-[10px]"></i>
             <span id="physics-btn-text">Physics: ON</span>
           </button>
-          <button id="btn-fit-view" class="bg-white hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs text-slate-700 border border-slate-200 transition-all duration-200 flex items-center gap-1.5 shadow-sm cursor-pointer">
-            <i class="fa-solid fa-expand text-slate-500"></i> Center
+          <button id="btn-fit-view" class="bg-white hover:bg-zinc-50 px-2.5 py-1 rounded-md text-xs text-zinc-700 border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+            <i class="fa-solid fa-expand text-zinc-400 text-[10px]"></i>
+            <span>Center</span>
           </button>
         </div>
 
-        <!-- Bottom Canvas Log / Event ticker -->
-        <div class="absolute bottom-3 left-4 right-4 z-10 pointer-events-none">
-          <div class="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2.5 text-xs border border-slate-200 shadow-sm flex items-center justify-between">
-            <div class="flex items-center gap-2 truncate">
-              <span class="text-slate-900 font-mono font-semibold">[LOG]</span>
-              <span id="log-message" class="text-slate-600 truncate font-mono">Topology initialized: 4 nodes (A, B, C, D) connected in a loop. Click 'Step Forward' or 'Start Simulation'.</span>
+        <!-- Bottom Console / Log Row -->
+        <div class="absolute bottom-3.5 left-4 right-4 z-10 pointer-events-none">
+          <div class="bg-white/95 rounded-lg px-3.5 py-2 text-xs border border-zinc-200 shadow-xs flex items-center justify-between">
+            <div class="flex items-center gap-2 truncate text-zinc-600 font-mono text-[11px]">
+              <span class="text-zinc-800 font-semibold">[LOG]</span>
+              <span id="log-message" class="truncate">Step 0: Initial network state loaded. Click 'Start Simulation' or 'Step Forward'.</span>
             </div>
-            <div id="convergence-badge" class="hidden shrink-0 ml-3 text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <i class="fa-solid fa-check-circle mr-1"></i> Converged
+            <div id="convergence-badge" class="shrink-0 ml-3 text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+              <i class="fa-solid fa-check text-[10px]"></i> Converged
             </div>
           </div>
         </div>
@@ -166,138 +187,142 @@
     </section>
 
     <!-- Side Panel: Node Routing Tables (Right) -->
-    <aside class="w-96 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden shrink-0 z-10">
+    <aside class="w-96 bg-white border border-zinc-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden shrink-0 z-10">
       <!-- Panel Header -->
-      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-table-list text-slate-700 text-sm"></i>
-          <h2 class="font-semibold text-sm tracking-wide text-slate-800">Routing Tables</h2>
+          <i class="fa-solid fa-list-check text-zinc-500 text-xs"></i>
+          <h2 class="font-semibold text-xs tracking-tight text-[#1E293B]">Routing Tables</h2>
         </div>
-        <span id="node-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+        <span id="node-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 border border-zinc-200">
           4 Nodes
         </span>
       </div>
 
-      <!-- Informational Legend -->
-      <div class="px-4 py-2 bg-slate-50/70 border-b border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
-        <span>Bellman-Ford: <span class="font-mono text-indigo-600 font-medium">d<sub>x</sub>(y) = min { c(x,v) + d<sub>v</sub>(y) }</span></span>
+      <!-- Bellman-Ford Formula Row -->
+      <div class="px-4 py-2 bg-zinc-50/60 border-b border-zinc-100 text-[11px] text-zinc-500 font-mono flex items-center justify-between">
+        <span>Bellman-Ford: d<sub>x</sub>(y) = min { c(x,v) + d<sub>v</sub>(y) }</span>
       </div>
 
       <!-- Scrollable List of Tables for Each Node -->
-      <div id="routing-tables-container" class="flex-1 overflow-y-auto p-4 space-y-3.5">
+      <div id="routing-tables-container" class="flex-1 overflow-y-auto p-3.5 space-y-3">
         <!-- Tables will be dynamically injected here -->
       </div>
     </aside>
 
   </main>
 
-  <!-- Bottom Control Panel -->
-  <footer class="h-20 bg-white shadow-sm border border-slate-200 rounded-xl px-6 py-3 flex items-center justify-between shrink-0 z-20">
-    <!-- Left actions: Simulation controls -->
-    <div class="flex items-center space-x-3">
-      <button id="btn-start-simulation" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm shadow-sm transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer">
+  <!-- Bottom Control Strip -->
+  <footer class="h-16 bg-white border border-zinc-200 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
+    <!-- Left actions: Simulation triggers -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Warm matte amber Pause/Start simulation button -->
+      <button id="btn-start-simulation" class="px-4 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
         <i id="sim-play-icon" class="fa-solid fa-play"></i>
         <span id="sim-btn-text">Start Simulation</span>
       </button>
 
-      <button id="btn-step-forward" class="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium text-sm transition-all duration-200 flex items-center gap-2 active:scale-95 shadow-sm cursor-pointer">
-        <i class="fa-solid fa-forward-step text-slate-500"></i>
+      <!-- Minimal border-only Step Forward button -->
+      <button id="btn-step-forward" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-forward-step text-zinc-400"></i>
         <span>Step Forward</span>
       </button>
     </div>
 
     <!-- Center Speed Slider -->
-    <div class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs text-slate-500">
-      <span class="font-medium">Speed:</span>
-      <input id="sim-speed-range" type="range" min="300" max="2500" value="1200" step="100" class="w-24 accent-slate-800 cursor-pointer">
-      <span id="speed-label" class="font-mono text-[11px] text-slate-800 font-semibold w-12 text-right">1.2s</span>
+    <div class="flex items-center gap-2.5 text-xs text-zinc-500 font-mono">
+      <span>Speed:</span>
+      <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-24 cursor-pointer">
+      <span id="speed-label" class="text-zinc-500 w-10 text-right">0.9s</span>
     </div>
 
-    <!-- Right actions: Topology manipulation -->
-    <div class="flex items-center space-x-3">
-      <button id="btn-add-node" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-circle-plus"></i>
+    <!-- Right actions: Add Node & Break Link -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Deep slate Add Node button -->
+      <button id="btn-add-node" class="px-3.5 py-2 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-plus text-zinc-300"></i>
         <span>Add Node</span>
       </button>
 
-      <button id="btn-break-link" class="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-sm shadow-sm transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-scissors"></i>
+      <!-- Desaturated dark-red Break Link button -->
+      <button id="btn-break-link" class="px-3.5 py-2 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-xmark text-white"></i>
         <span>Break Link</span>
       </button>
     </div>
   </footer>
 
   <!-- Modal: Add Node -->
-  <div id="modal-add-node" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-md rounded-2xl p-6 border border-slate-200 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <i class="fa-solid fa-circle-plus"></i>
+  <div id="modal-add-node" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded bg-zinc-100 text-[#1E293B] flex items-center justify-center text-xs">
+            <i class="fa-solid fa-plus"></i>
           </div>
-          <h3 class="font-semibold text-base text-slate-800">Add New Network Node</h3>
+          <h3 class="font-semibold text-sm text-[#1E293B]">Add New Network Node</h3>
         </div>
-        <button id="modal-add-close" class="text-slate-400 hover:text-slate-600 transition cursor-pointer">
-          <i class="fa-solid fa-xmark text-lg"></i>
+        <button id="modal-add-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-3.5">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Node Identifier</label>
-          <input id="new-node-id" type="text" maxlength="3" placeholder="e.g. E" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 uppercase font-mono">
+          <label class="block text-xs font-medium text-zinc-600 mb-1">Node Identifier</label>
+          <input id="new-node-id" type="text" maxlength="3" placeholder="e.g. E" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] uppercase font-mono">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Connect To Existing Node</label>
-          <select id="new-node-target" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono">
+          <label class="block text-xs font-medium text-zinc-600 mb-1">Connect To Node</label>
+          <select id="new-node-target" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] font-mono">
             <!-- Populated dynamically -->
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Link Metric / Cost</label>
-          <input id="new-node-cost" type="number" min="1" max="99" value="3" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono">
+          <label class="block text-xs font-medium text-zinc-600 mb-1">Link Cost</label>
+          <input id="new-node-cost" type="number" min="1" max="99" value="3" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] font-mono">
         </div>
       </div>
 
-      <div class="flex justify-end gap-3 mt-6 pt-3 border-t border-slate-100">
-        <button id="modal-add-cancel" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition cursor-pointer">Cancel</button>
-        <button id="modal-add-confirm" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs transition shadow-sm cursor-pointer">Add Node</button>
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
+        <button id="modal-add-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
+        <button id="modal-add-confirm" class="px-3.5 py-1.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer">Add Node</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Break Link -->
-  <div id="modal-break-link" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-md rounded-2xl p-6 border border-slate-200 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center">
+  <div id="modal-break-link" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded bg-rose-50 text-[#991B1B] flex items-center justify-center text-xs">
             <i class="fa-solid fa-scissors"></i>
           </div>
-          <h3 class="font-semibold text-base text-slate-800">Sever / Restore Link</h3>
+          <h3 class="font-semibold text-sm text-[#1E293B]">Sever / Restore Link</h3>
         </div>
-        <button id="modal-break-close" class="text-slate-400 hover:text-slate-600 transition cursor-pointer">
-          <i class="fa-solid fa-xmark text-lg"></i>
+        <button id="modal-break-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-3.5">
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Select Link</label>
-          <select id="break-link-select" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 font-mono">
+          <label class="block text-xs font-medium text-zinc-600 mb-1">Select Link</label>
+          <select id="break-link-select" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#991B1B] font-mono">
             <!-- Populated dynamically -->
           </select>
         </div>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Severing a link sets its cost to <span class="font-mono text-rose-500 font-semibold">∞</span>. Next step forward will trigger distance vector route re-computations and demonstrate convergence.
+        <p class="text-[11px] text-zinc-500 leading-relaxed">
+          Severing sets cost to <span class="font-mono text-[#991B1B] font-semibold">∞</span>. Next step forward initiates distance vector convergence.
         </p>
       </div>
 
-      <div class="flex justify-end gap-3 mt-6 pt-3 border-t border-slate-100">
-        <button id="modal-break-cancel" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition cursor-pointer">Cancel</button>
-        <button id="modal-break-toggle" class="px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition shadow-sm cursor-pointer">Toggle Link State</button>
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
+        <button id="modal-break-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
+        <button id="modal-break-toggle" class="px-3.5 py-1.5 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs transition shadow-xs cursor-pointer">Toggle Link</button>
       </div>
     </div>
   </div>
@@ -309,20 +334,19 @@
     let stepCount = 0;
     let isRunning = false;
     let simInterval = null;
-    let stepIntervalMs = 1200;
+    let stepIntervalMs = 900;
     let physicsEnabled = true;
 
     // Topology representation
     let nodesList = ['A', 'B', 'C', 'D'];
     let edgesList = [
-      { from: 'A', to: 'B', cost: 2, broken: false },
-      { from: 'B', to: 'C', cost: 1, broken: false },
-      { from: 'C', to: 'D', cost: 3, broken: false },
-      { from: 'D', to: 'A', cost: 4, broken: false }
+      { from: 'A', to: 'B', cost: 1, broken: false },
+      { from: 'C', to: 'B', cost: 2, broken: false },
+      { from: 'D', to: 'C', cost: 1, broken: false },
+      { from: 'A', to: 'D', cost: INF, broken: true }
     ];
 
     // Routing Tables structure:
-    // routingTables[nodeId][destId] = { cost: Number, nextHop: String, changed: Boolean }
     let routingTables = {};
     let lastChanges = [];
 
@@ -360,15 +384,14 @@
 
         ws.onopen = () => {
           isBackendConnected = true;
-          updateBackendStatus(true, `Connected`);
-          setLogMessage('WebSocket connected to FastAPI backend. Receiving real-time Bellman-Ford vectors.');
+          updateBackendStatus(true, 'Connected');
+          setLogMessage('WebSocket connected to backend. Real-time Bellman-Ford vectors active.');
           if (reconnectTimer) {
             clearTimeout(reconnectTimer);
             reconnectTimer = null;
           }
         };
 
-        // When a message containing updated JSON routing tables is received:
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -382,13 +405,13 @@
 
         ws.onclose = () => {
           isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected (Reconnecting...)');
+          updateBackendStatus(false, 'Disconnected');
           scheduleReconnect();
         };
 
         ws.onerror = () => {
           isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected (Error)');
+          updateBackendStatus(false, 'Disconnected');
         };
       } catch (e) {
         isBackendConnected = false;
@@ -406,7 +429,6 @@
       }
     }
 
-    // Connection status indicator
     function updateBackendStatus(connected, text) {
       const dot = document.getElementById('backend-dot');
       const label = document.getElementById('backend-status-text');
@@ -414,11 +436,11 @@
 
       label.textContent = text;
       if (connected) {
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-sm';
-        label.className = 'text-emerald-700 font-medium font-mono text-xs';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        label.className = 'text-xs text-zinc-800 font-mono';
       } else {
-        dot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-pulse';
-        label.className = 'text-rose-600 font-medium font-mono text-xs';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
+        label.className = 'text-xs text-zinc-500 font-mono';
       }
     }
 
@@ -438,9 +460,9 @@
       updateStepUI(stepCount);
 
       if (data.converged) {
-        setConvergenceStatus(true, "Converged (Tables Stable)");
+        setConvergenceStatus(true, "Converged");
       } else {
-        setConvergenceStatus(false, data.running ? "Propagating vectors (3s interval)..." : "Simulation Paused");
+        setConvergenceStatus(false, data.running ? "Propagating" : "Paused");
       }
       updatePlayButtonUI(data.running);
 
@@ -484,28 +506,25 @@
       isRunning = running;
       const btnText = document.getElementById('sim-btn-text');
       const btnIcon = document.getElementById('sim-play-icon');
-      const btn = document.getElementById('btn-start-simulation');
 
       if (isRunning) {
         btnText.textContent = 'Pause Simulation';
         btnIcon.className = 'fa-solid fa-pause';
-        btn.className = 'px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm shadow-sm transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer';
       } else {
         btnText.textContent = 'Start Simulation';
         btnIcon.className = 'fa-solid fa-play';
-        btn.className = 'px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm shadow-sm transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer';
       }
     }
 
-    // Vis.js Network Setup with Physics Engine
+    // Vis.js Network Setup matching image_1.png
     function initNetwork() {
       const container = document.getElementById('network-canvas');
 
       const initialNodesData = [
-        { id: 'A', label: 'Node A', title: 'Router A' },
-        { id: 'B', label: 'Node B', title: 'Router B' },
-        { id: 'C', label: 'Node C', title: 'Router C' },
-        { id: 'D', label: 'Node D', title: 'Router D' }
+        { id: 'A', label: 'Node A' },
+        { id: 'B', label: 'Node B' },
+        { id: 'C', label: 'Node C' },
+        { id: 'D', label: 'Node D' }
       ].map(n => formatNodeStyle(n));
 
       const initialEdgesData = edgesList.map((e, idx) => formatEdgeStyle(e, idx));
@@ -519,54 +538,52 @@
         nodes: {
           shape: 'circle',
           font: {
-            color: '#0f172a',
-            size: 13,
-            face: 'Inter, sans-serif',
-            strokeWidth: 0
+            color: '#1E293B',
+            size: 12,
+            face: 'Inter, sans-serif'
           },
-          borderWidth: 2,
+          borderWidth: 1.5,
           shadow: {
             enabled: true,
-            color: 'rgba(15, 23, 42, 0.08)',
-            size: 10,
+            color: 'rgba(0, 0, 0, 0.04)',
+            size: 6,
             x: 0,
-            y: 2
+            y: 1
           }
         },
         edges: {
+          arrows: {
+            to: { enabled: true, scaleFactor: 0.55 }
+          },
           font: {
-            color: '#334155',
-            size: 12,
+            color: '#475569',
+            size: 11,
             face: 'JetBrains Mono, monospace',
             align: 'middle',
-            background: '#ffffff',
-            strokeWidth: 3,
-            strokeColor: '#ffffff'
+            background: '#FFFFFF',
+            strokeWidth: 2,
+            strokeColor: '#FFFFFF'
           },
           color: {
             color: '#475569',
-            highlight: '#1e293b',
-            hover: '#1e293b'
-          },
-          arrows: {
-            to: { enabled: false },
-            from: { enabled: false }
+            highlight: '#1E293B',
+            hover: '#1E293B'
           },
           smooth: {
             type: 'continuous',
-            roundness: 0.15
+            roundness: 0.1
           }
         },
         physics: {
           enabled: true,
           solver: 'barnesHut',
           barnesHut: {
-            gravitationalConstant: -4000,
+            gravitationalConstant: -3800,
             centralGravity: 0.3,
-            springLength: 160,
+            springLength: 170,
             springConstant: 0.04,
             damping: 0.09,
-            avoidOverlap: 0.35
+            avoidOverlap: 0.4
           },
           stabilization: {
             enabled: true,
@@ -585,7 +602,6 @@
 
       network = new vis.Network(container, data, options);
 
-      // Handle edge clicks on the Vis.js graph
       network.on('click', (params) => {
         if (params.edges.length > 0 && params.nodes.length === 0) {
           const edgeId = params.edges[0];
@@ -606,7 +622,7 @@
       if (edgeObj) {
         selectedEdge = { source: edgeObj.from, target: edgeObj.to, id: edgeId, broken: edgeObj.broken };
         updateBreakLinkButtonUI();
-        setLogMessage(`Selected Link ${edgeObj.from} ⟷ ${edgeObj.to} (Cost: ${edgeObj.broken ? '∞' : edgeObj.cost}). Press 'Break Link' to simulate network failure.`);
+        setLogMessage(`Selected Link ${edgeObj.from} ⟷ ${edgeObj.to} (Cost: ${edgeObj.broken ? '∞' : edgeObj.cost}). Press 'Break Link' to toggle.`);
       }
     }
 
@@ -616,56 +632,50 @@
 
       if (selectedEdge) {
         const actionLabel = selectedEdge.broken ? 'Restore Link' : 'Break Link';
-        btn.innerHTML = `<i class="fa-solid fa-scissors"></i> <span>${actionLabel} (${selectedEdge.source} ⟷ ${selectedEdge.target})</span>`;
-        if (selectedEdge.broken) {
-          btn.className = 'px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all duration-200 flex items-center gap-2 active:scale-95 shadow-sm cursor-pointer';
-        } else {
-          btn.className = 'px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-sm transition-all duration-200 flex items-center gap-2 active:scale-95 shadow-sm cursor-pointer';
-        }
+        btn.innerHTML = `<i class="fa-solid fa-scissors text-white"></i> <span>${actionLabel} (${selectedEdge.source} ⟷ ${selectedEdge.target})</span>`;
       } else {
-        btn.innerHTML = `<i class="fa-solid fa-scissors"></i> <span>Break Link</span>`;
-        btn.className = 'px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-sm transition-all duration-200 flex items-center gap-2 active:scale-95 shadow-sm cursor-pointer';
+        btn.innerHTML = `<i class="fa-solid fa-xmark text-white"></i> <span>Break Link</span>`;
       }
     }
 
-    // Vis.js Node styling: White background with clean dark border
+    // Vis.js Node styling: White background with dark charcoal border (#1E293B)
     function formatNodeStyle(node) {
       return {
         id: node.id,
         label: node.label || `Node ${node.id}`,
         color: {
-          background: '#ffffff',
-          border: '#1e293b',
+          background: '#FFFFFF',
+          border: '#1E293B',
           highlight: {
-            background: '#f8fafc',
-            border: '#0f172a'
+            background: '#F8FAFC',
+            border: '#0F172A'
           },
           hover: {
-            background: '#f1f5f9',
-            border: '#0f172a'
+            background: '#F1F5F9',
+            border: '#0F172A'
           }
         },
-        borderWidth: 2,
+        borderWidth: 1.5,
         shadow: {
           enabled: true,
-          color: 'rgba(15, 23, 42, 0.08)',
-          size: 10,
+          color: 'rgba(0, 0, 0, 0.05)',
+          size: 6,
           x: 0,
-          y: 2
+          y: 1
         },
         font: {
-          color: '#0f172a',
-          size: 13,
+          color: '#1E293B',
+          size: 12,
           face: 'Inter, sans-serif',
           strokeWidth: 0,
           bold: true
         },
-        size: 26,
-        margin: 10
+        size: 24,
+        margin: 8
       };
     }
 
-    // Vis.js Edge styling: Steel blue line, crisp white label badge, soft red for broken
+    // Vis.js Edge styling: Thin steel-gray lines, dashed brick-red (#991B1B) for severed
     function formatEdgeStyle(edge, id) {
       const edgeId = id !== undefined ? id : `${edge.from}-${edge.to}`;
       const isBroken = edge.broken;
@@ -673,29 +683,25 @@
         id: edgeId,
         from: edge.from,
         to: edge.to,
-        label: isBroken ? '∞ (Severed)' : `Cost: ${edge.cost}`,
+        label: isBroken ? 'Cost: ∞' : `Cost: ${edge.cost}`,
         font: {
-          color: isBroken ? '#e11d48' : '#334155',
-          size: 12,
+          color: isBroken ? '#991B1B' : '#475569',
+          size: 11,
           face: 'JetBrains Mono, monospace',
           align: 'middle',
-          background: '#ffffff',
-          strokeWidth: 3,
-          strokeColor: '#ffffff'
+          background: '#FFFFFF',
+          strokeWidth: 2,
+          strokeColor: '#FFFFFF'
         },
         color: {
-          color: isBroken ? '#f43f5e' : '#475569',
-          highlight: isBroken ? '#e11d48' : '#1e293b',
-          hover: isBroken ? '#e11d48' : '#1e293b'
+          color: isBroken ? '#991B1B' : '#475569',
+          highlight: isBroken ? '#991B1B' : '#1E293B',
+          hover: isBroken ? '#991B1B' : '#1E293B'
         },
-        dashes: isBroken ? [6, 6] : false,
-        width: isBroken ? 2 : 2.5,
+        dashes: isBroken ? [5, 5] : false,
+        width: 1.5,
         shadow: {
-          enabled: true,
-          color: isBroken ? 'rgba(244, 63, 94, 0.2)' : 'rgba(71, 85, 105, 0.1)',
-          size: 6,
-          x: 0,
-          y: 1
+          enabled: false
         }
       };
     }
@@ -725,8 +731,8 @@
         });
       });
 
-      setConvergenceStatus(false, "Initial State (Direct neighbors)");
-      setLogMessage(`Loop topology loaded: A (2) B (1) C (3) D (4) A. Initial routing tables created.`);
+      setConvergenceStatus(true, "Converged");
+      setLogMessage(`Step 0: Initial network state loaded. Click 'Start Simulation' or 'Step Forward'.`);
     }
 
     function getDirectLink(u, v) {
@@ -746,7 +752,7 @@
       return neighbors;
     }
 
-    // Dynamically clear and rebuild HTML routing tables in the side panel
+    // Dynamically clear and rebuild HTML routing tables in right sidebar
     function renderAllRoutingTables() {
       const container = document.getElementById('routing-tables-container');
       if (!container) return;
@@ -756,46 +762,46 @@
 
       nodesList.forEach(nodeId => {
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300';
+        card.className = 'bg-white rounded-lg p-3 border border-zinc-200 shadow-xs transition-all';
 
-        // Table Header
+        // Inner Card Header: [A] Router A Table
         const header = document.createElement('div');
-        header.className = 'flex items-center justify-between pb-2 mb-2 border-b border-slate-100';
+        header.className = 'flex items-center justify-between pb-2 mb-2 border-b border-zinc-100';
         header.innerHTML = `
           <div class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-md bg-slate-100 text-slate-800 font-bold font-mono text-xs flex items-center justify-center border border-slate-200">
+            <span class="w-5 h-5 rounded bg-zinc-100 text-zinc-700 font-semibold font-mono text-xs flex items-center justify-center border border-zinc-200">
               ${nodeId}
             </span>
-            <span class="font-semibold text-xs text-slate-800">Router ${nodeId} Table</span>
+            <span class="font-medium text-xs text-[#1E293B]">Router ${nodeId} Table</span>
           </div>
-          <span class="text-[10px] text-slate-400 font-mono">D<sub>${nodeId}</sub></span>
+          <span class="text-[10px] text-zinc-400 font-mono">D<sub>${nodeId}</sub></span>
         `;
         card.appendChild(header);
 
-        // Monospace HTML Table: Destination, Next Hop, Cost
+        // Tabular data with light-gray header background
         const table = document.createElement('table');
         table.className = 'w-full text-left text-xs font-mono';
         table.innerHTML = `
           <thead>
-            <tr class="text-[11px] text-slate-400 border-b border-slate-100">
-              <th class="pb-1.5 font-medium">Destination</th>
-              <th class="pb-1.5 font-medium">Next Hop</th>
-              <th class="pb-1.5 font-medium text-right">Cost</th>
+            <tr class="text-[11px] text-zinc-500 bg-zinc-50/80 border-b border-zinc-100">
+              <th class="py-1 px-2 font-medium">Destination</th>
+              <th class="py-1 px-2 font-medium">Next Hop</th>
+              <th class="py-1 px-2 font-medium text-right">Cost</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="divide-y divide-zinc-100 text-[11px]">
             ${nodesList.map(destId => {
               const rowData = routingTables[nodeId] ? routingTables[nodeId][destId] : { cost: INF, nextHop: '—', changed: false };
-              const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-rose-500 font-bold">∞</span>' : (rowData ? rowData.cost : '—');
+              const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-[#991B1B] font-semibold">∞</span>' : (rowData ? rowData.cost : '—');
               const nextHopVal = rowData ? (rowData.nextHop || rowData.next_hop || '—') : '—';
-              const nextHopDisplay = nextHopVal === '—' ? '<span class="text-slate-400">—</span>' : `<span class="text-indigo-600 font-semibold">${nextHopVal}</span>`;
-              const isUpdatedClass = (rowData && rowData.changed) ? 'bg-indigo-50/70 text-slate-900 font-semibold' : 'text-slate-700';
+              const nextHopDisplay = nextHopVal === '—' ? '<span class="text-zinc-400">—</span>' : `<span class="text-zinc-700 font-medium">${nextHopVal}</span>`;
+              const isUpdatedClass = (rowData && rowData.changed) ? 'bg-zinc-100 text-zinc-900 font-medium' : 'text-zinc-700';
               
               return `
                 <tr class="transition-colors ${isUpdatedClass}">
-                  <td class="py-1.5 font-bold text-slate-800">${destId}</td>
-                  <td class="py-1.5">${nextHopDisplay}</td>
-                  <td class="py-1.5 text-right font-medium ${(rowData && rowData.cost < INF) ? 'text-slate-800' : ''}">${costDisplay}</td>
+                  <td class="py-1.5 px-2 text-[#1E293B] font-medium">${destId}</td>
+                  <td class="py-1.5 px-2">${nextHopDisplay}</td>
+                  <td class="py-1.5 px-2 text-right font-medium text-zinc-800">${costDisplay}</td>
                 </tr>
               `;
             }).join('')}
@@ -809,16 +815,15 @@
 
     function setConvergenceStatus(converged, text) {
       const statusEl = document.getElementById('convergence-status');
+      const textEl = document.getElementById('convergence-text');
       const badgeEl = document.getElementById('convergence-badge');
 
+      textEl.textContent = text;
       if (converged) {
-        statusEl.className = 'flex items-center gap-1.5 font-semibold text-emerald-600';
-        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ${text}`;
-        badgeEl.className = 'shrink-0 ml-3 text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200';
+        statusEl.className = 'flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-medium text-emerald-800';
         badgeEl.classList.remove('hidden');
       } else {
-        statusEl.className = 'flex items-center gap-1.5 font-semibold text-amber-600';
-        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> ${text}`;
+        statusEl.className = 'flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 text-xs font-medium text-amber-800';
         badgeEl.classList.add('hidden');
       }
     }
@@ -832,7 +837,7 @@
     }
 
     // ==========================================
-    // 4. Control Panel Actions & Break Link Button
+    // 4. Control Panel Actions
     // ==========================================
     function handleBreakLinkButtonClick() {
       if (selectedEdge) {
@@ -844,7 +849,7 @@
 
         if (isBackendConnected) {
           sendBackendAction(payload);
-          setLogMessage(`Sent Break Link action for ${selectedEdge.source} ⟷ ${selectedEdge.target} via WebSocket.`);
+          setLogMessage(`Sent Break Link action for ${selectedEdge.source} ⟷ ${selectedEdge.target}.`);
         } else {
           toggleLinkStateById(selectedEdge.id);
         }
@@ -944,14 +949,14 @@
       renderAllRoutingTables();
 
       if (anyChange) {
-        setConvergenceStatus(false, "Propagating vectors...");
+        setConvergenceStatus(false, "Propagating");
         const sampleLog = lastChanges.slice(0, 2).map(c => 
           `${c.node}→${c.dest}: cost ${c.oldCost === INF ? '∞' : c.oldCost}➔${c.newCost === INF ? '∞' : c.newCost} (via ${c.nextHop})`
         ).join('; ');
         setLogMessage(`Step ${stepCount}: Updated routes [${sampleLog}${lastChanges.length > 2 ? ' ...' : ''}]`);
       } else {
-        setConvergenceStatus(true, "Converged (Tables Stable)");
-        setLogMessage(`Step ${stepCount}: No distance vector changes detected. Network has fully converged!`);
+        setConvergenceStatus(true, "Converged");
+        setLogMessage(`Step ${stepCount}: No routing table changes. Network converged!`);
         if (isRunning) {
           toggleSimulation();
         }
@@ -974,12 +979,15 @@
         }
 
         edgeObj.broken = !edgeObj.broken;
+        if (edgeObj.broken) {
+          edgeObj.cost = INF;
+        }
         const edgeIndex = edgesList.indexOf(edgeObj);
         visEdges.update(formatEdgeStyle(edgeObj, edgeIndex));
 
         const stateText = edgeObj.broken ? 'severed (cost = ∞)' : `restored (cost = ${edgeObj.cost})`;
-        setLogMessage(`Link ${edgeObj.from} ⟷ ${edgeObj.to} ${stateText}. Triggering distance update.`);
-        setConvergenceStatus(false, `Link modified: ${edgeObj.from}-${edgeObj.to}`);
+        setLogMessage(`Link ${edgeObj.from} ⟷ ${edgeObj.to} ${stateText}.`);
+        setConvergenceStatus(false, "Modified");
         stepForwardDistanceVector();
       }
     }
@@ -996,10 +1004,10 @@
 
       nodesList = ['A', 'B', 'C', 'D'];
       edgesList = [
-        { from: 'A', to: 'B', cost: 2, broken: false },
-        { from: 'B', to: 'C', cost: 1, broken: false },
-        { from: 'C', to: 'D', cost: 3, broken: false },
-        { from: 'D', to: 'A', cost: 4, broken: false }
+        { from: 'A', to: 'B', cost: 1, broken: false },
+        { from: 'C', to: 'B', cost: 2, broken: false },
+        { from: 'D', to: 'C', cost: 1, broken: false },
+        { from: 'A', to: 'D', cost: INF, broken: true }
       ];
 
       selectedEdge = null;
@@ -1013,7 +1021,7 @@
 
       initRoutingTables();
       renderAllRoutingTables();
-      network.fit({ animation: { duration: 600 } });
+      network.fit({ animation: { duration: 500 } });
     }
 
     // Modal Handlers
@@ -1092,8 +1100,8 @@
         }
       });
 
-      setConvergenceStatus(false, `Added Node ${nodeId}`);
-      setLogMessage(`Node ${nodeId} connected to Node ${targetId} with cost ${cost}. Ready to run Bellman-Ford step.`);
+      setConvergenceStatus(false, "Added Node");
+      setLogMessage(`Node ${nodeId} connected to Node ${targetId} with cost ${cost}.`);
       renderAllRoutingTables();
 
       document.getElementById('modal-add-node').classList.add('hidden');
