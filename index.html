@@ -477,6 +477,34 @@
     let updatedRowKeys = new Set();
     let flashFadeTimer = null;
 
+    // Physical Packet Animation state
+    let activePackets = [];
+    let animationStartTime = null;
+    let animationReqId = null;
+    let isStepAnimating = false;
+    const PACKET_DURATION_MS = 1500; // 1.5 seconds
+
+    function animatePackets(timestamp) {
+      if (!animationStartTime) animationStartTime = timestamp;
+      const elapsed = timestamp - animationStartTime;
+      const progress = Math.min(1.0, elapsed / PACKET_DURATION_MS);
+
+      for (let p of activePackets) {
+        p.progress = progress;
+      }
+
+      if (network) network.redraw();
+
+      if (progress < 1.0) {
+        animationReqId = requestAnimationFrame(animatePackets);
+      } else {
+        activePackets = [];
+        animationStartTime = null;
+        animationReqId = null;
+        if (network) network.redraw();
+      }
+    }
+
     // Vis.js references
     let network = null;
     let visNodes = null;
@@ -534,7 +562,7 @@
       return changedKeys;
     }
 
-    function processRoutingTableUpdate(newTables, isAutoRunning) {
+    function processRoutingTableUpdate(newTables) {
       if (flashFadeTimer) {
         clearTimeout(flashFadeTimer);
         flashFadeTimer = null;
@@ -544,20 +572,7 @@
       routingTables = newTables;
       renderAllRoutingTables();
       prevRoutingTables = deepCloneTables(newTables);
-
-      // Auto-play: fade out after 700ms. Manual step: persists visible.
-      if (isAutoRunning && updatedRowKeys.size > 0) {
-        flashFadeTimer = setTimeout(() => {
-          updatedRowKeys.forEach(key => {
-            const row = document.getElementById(`row-${key}`);
-            if (row) {
-              row.classList.remove('bg-amber-50', 'text-amber-900', 'font-medium');
-              row.classList.add('bg-transparent', 'text-zinc-700');
-            }
-          });
-          updatedRowKeys.clear();
-        }, 700);
-      }
+      // Highlight persists until next step!
     }
 
     // ==========================================
@@ -824,6 +839,46 @@
 
       network = new vis.Network(container, data, options);
 
+      // Physical Packet Animation renderer on Vis.js canvas
+      network.on("afterDrawing", (ctx) => {
+        if (!activePackets || activePackets.length === 0) return;
+        const nodePositions = network.getPositions();
+
+        for (let p of activePackets) {
+          const posA = nodePositions[p.from];
+          const posB = nodePositions[p.to];
+          if (!posA || !posB) continue;
+
+          const dx = posB.x - posA.x;
+          const dy = posB.y - posA.y;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const nx = -dy / len;
+          const ny = dx / len;
+          const offset = p.offset || 4;
+
+          const t = p.progress;
+          const px = (posA.x + nx * offset) + dx * t;
+          const py = (posA.y + ny * offset) + dy * t;
+
+          ctx.save();
+          // Halo glow
+          ctx.beginPath();
+          ctx.arc(px, py, 6.5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+          ctx.fill();
+
+          // Packet core dot
+          ctx.beginPath();
+          ctx.arc(px, py, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#059669';
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+
       // Node and Edge click handling
       network.on('click', (params) => {
         // --- A. Setup Mode: Click two nodes to connect ---
@@ -1070,16 +1125,18 @@
               const rowData = routingTables[nodeId] ? routingTables[nodeId][destId] : { cost: INF, nextHop: '—', changed: false };
               const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-[#991B1B] font-semibold">∞</span>' : (rowData ? rowData.cost : '—');
               const nextHopVal = rowData ? (rowData.nextHop || rowData.next_hop || '—') : '—';
-              const nextHopDisplay = nextHopVal === '—' ? '<span class="text-zinc-400">—</span>' : `<span class="text-zinc-700 font-medium">${nextHopVal}</span>`;
+              const nextHopDisplay = nextHopVal === '—' 
+                ? (isUpdated ? '<span class="text-emerald-300/80">—</span>' : '<span class="text-zinc-400">—</span>') 
+                : (isUpdated ? `<span class="text-emerald-200 font-medium">${nextHopVal}</span>` : `<span class="text-zinc-700 font-medium">${nextHopVal}</span>`);
               const highlightClasses = isUpdated 
-                ? 'bg-amber-50 text-amber-900 font-medium' 
+                ? 'bg-emerald-900/50 text-white font-medium' 
                 : 'bg-transparent text-zinc-700';
               
               return `
-                <tr id="row-${rowKey}" class="transition-colors duration-700 ${highlightClasses}">
-                  <td class="py-1.5 px-2 text-[#1E293B] font-medium">${destId}</td>
+                <tr id="row-${rowKey}" class="transition-colors duration-500 ${highlightClasses}">
+                  <td class="py-1.5 px-2 ${isUpdated ? 'text-white' : 'text-[#1E293B]'} font-medium">${destId}</td>
                   <td class="py-1.5 px-2">${nextHopDisplay}</td>
-                  <td class="py-1.5 px-2 text-right font-medium text-zinc-800">${costDisplay}</td>
+                  <td class="py-1.5 px-2 text-right font-medium ${isUpdated ? 'text-emerald-200' : 'text-zinc-800'}">${costDisplay}</td>
                 </tr>
               `;
             }).join('')}
@@ -1256,90 +1313,130 @@
       updatePlayButtonUI(isRunning);
 
       if (isRunning) {
-        simInterval = setInterval(() => {
-          stepForwardDistanceVector();
-        }, stepIntervalMs);
+        runAutoLoop();
       } else {
-        clearInterval(simInterval);
-        simInterval = null;
+        if (simInterval) {
+          clearTimeout(simInterval);
+          simInterval = null;
+        }
       }
     }
 
+    function runAutoLoop() {
+      if (!isRunning) return;
+      stepForwardDistanceVector();
+      simInterval = setTimeout(() => {
+        if (isRunning) runAutoLoop();
+      }, 1500 + stepIntervalMs);
+    }
+
     function stepForwardDistanceVector() {
-      if (isBackendConnected) {
-        sendBackendAction({ action: 'step' });
-        return;
-      }
+      if (isStepAnimating) return; // Ignore clicks while packets are in flight
+      isStepAnimating = true;
 
-      // Standalone client fallback
-      stepCount++;
-      updateStepUI(stepCount);
-
-      const snapshot = {};
-      nodesList.forEach(n => {
-        snapshot[n] = {};
-        nodesList.forEach(dest => {
-          snapshot[n][dest] = routingTables[n][dest].cost;
-        });
+      // 1. Trigger Vis.js animation that spawns packets along active links
+      activePackets = [];
+      edgesList.forEach(e => {
+        if (!e.broken) {
+          activePackets.push({ from: e.from, to: e.to, progress: 0, offset: 4 });
+          activePackets.push({ from: e.to, to: e.from, progress: 0, offset: -4 });
+        }
       });
 
-      let anyChange = false;
-      lastChanges = [];
+      if (activePackets.length > 0) {
+        animationStartTime = null;
+        requestAnimationFrame(animatePackets);
+        setLogMessage('Transmitting distance vector packets along active links (1.5s)...');
+      }
 
-      nodesList.forEach(u => {
-        const neighbors = getNeighbors(u);
+      const stepBtn = document.getElementById('btn-step-forward');
+      if (stepBtn) {
+        stepBtn.classList.add('opacity-50', 'pointer-events-none');
+      }
 
-        nodesList.forEach(v => {
-          if (u === v) {
-            routingTables[u][v].cost = 0;
-            routingTables[u][v].nextHop = u;
-            routingTables[u][v].changed = false;
-            return;
-          }
+      // 2. 1.5 Second timeout: only after packet animation finishes, update router tables!
+      setTimeout(() => {
+        isStepAnimating = false;
+        if (stepBtn) {
+          stepBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
 
-          let minCost = INF;
-          let bestNextHop = '—';
+        if (isBackendConnected) {
+          sendBackendAction({ action: 'step' });
+          return;
+        }
 
-          neighbors.forEach(nbr => {
-            const costThroughNbr = nbr.cost + snapshot[nbr.id][v];
-            if (costThroughNbr < minCost) {
-              minCost = costThroughNbr;
-              bestNextHop = nbr.id;
+        // Standalone client fallback calculation
+        stepCount++;
+        updateStepUI(stepCount);
+
+        const snapshot = {};
+        nodesList.forEach(n => {
+          snapshot[n] = {};
+          nodesList.forEach(dest => {
+            snapshot[n][dest] = routingTables[n][dest].cost;
+          });
+        });
+
+        let anyChange = false;
+        lastChanges = [];
+
+        nodesList.forEach(u => {
+          const neighbors = getNeighbors(u);
+
+          nodesList.forEach(v => {
+            if (u === v) {
+              routingTables[u][v].cost = 0;
+              routingTables[u][v].nextHop = u;
+              routingTables[u][v].changed = false;
+              return;
+            }
+
+            let minCost = INF;
+            let bestNextHop = '—';
+
+            neighbors.forEach(nbr => {
+              const costThroughNbr = nbr.cost + snapshot[nbr.id][v];
+              if (costThroughNbr < minCost) {
+                minCost = costThroughNbr;
+                bestNextHop = nbr.id;
+              }
+            });
+
+            const currentEntry = routingTables[u][v];
+            if (currentEntry.cost !== minCost || (minCost < INF && currentEntry.nextHop !== bestNextHop)) {
+              anyChange = true;
+              lastChanges.push({
+                node: u,
+                dest: v,
+                oldCost: currentEntry.cost,
+                newCost: minCost,
+                nextHop: bestNextHop
+              });
+              routingTables[u][v] = { cost: minCost, nextHop: bestNextHop, changed: true };
+            } else {
+              routingTables[u][v].changed = false;
             }
           });
-
-          const currentEntry = routingTables[u][v];
-          if (currentEntry.cost !== minCost || (minCost < INF && currentEntry.nextHop !== bestNextHop)) {
-            anyChange = true;
-            lastChanges.push({
-              node: u,
-              dest: v,
-              oldCost: currentEntry.cost,
-              newCost: minCost,
-              nextHop: bestNextHop
-            });
-            routingTables[u][v] = { cost: minCost, nextHop: bestNextHop, changed: true };
-          } else {
-            routingTables[u][v].changed = false;
-          }
         });
-      });
 
-      processRoutingTableUpdate(routingTables, isRunning);
+        // Persist highlight until next step
+        processRoutingTableUpdate(routingTables);
 
-      if (anyChange) {
-        setConvergenceStatus(false, "Propagating");
-        const sampleLog = lastChanges.slice(0, 2).map(c => 
-          `${c.node}→${c.dest}: cost ${c.oldCost === INF ? '∞' : c.oldCost}➔${c.newCost === INF ? '∞' : c.newCost} (via ${c.nextHop})`
-        ).join('; ');
-        setLogMessage(`Step ${stepCount}: Updated routes [${sampleLog}${lastChanges.length > 2 ? ' ...' : ''}]`);
-      } else {
-        setConvergenceStatus(true, "Converged");
-        setLogMessage(`Step ${stepCount}: No routing table changes. Network converged!`);
-        if (isRunning) {
-          toggleSimulation();
+        if (anyChange) {
+          setConvergenceStatus(false, "Propagating");
+          const sampleLog = lastChanges.slice(0, 2).map(c => 
+            `${c.node}→${c.dest}: cost ${c.oldCost === INF ? '∞' : c.oldCost}➔${c.newCost === INF ? '∞' : c.newCost} (via ${c.nextHop})`
+          ).join('; ');
+          setLogMessage(`Step ${stepCount}: Packets arrived! Updated routes [${sampleLog}${lastChanges.length > 2 ? ' ...' : ''}]`);
+        } else {
+          setConvergenceStatus(true, "Converged");
+          setLogMessage(`Step ${stepCount}: Packets arrived. No routing table changes. Network converged!`);
+          if (isRunning) {
+            toggleSimulation();
+          }
         }
-      }
+      }, 1500);
     }
 
     function handleBreakLinkButtonClick() {
