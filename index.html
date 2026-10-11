@@ -552,7 +552,7 @@
 
         ws.onopen = () => {
           isBackendConnected = true;
-          updateBackendStatus(true, 'Connected (ws://localhost:8000/ws)');
+          updateBackendStatus(true, `Connected (${WS_URL})`);
           setLogMessage('WebSocket connected to FastAPI backend. Receiving real-time Bellman-Ford vectors.');
           if (reconnectTimer) {
             clearTimeout(reconnectTimer);
