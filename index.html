@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DVR Protocol Analyzer - Enterprise Network Monitor</title>
   
   <!-- System Fonts: Inter & JetBrains Mono -->
@@ -23,6 +23,9 @@
     tailwind.config = {
       theme: {
         extend: {
+          screens: {
+            'xs': '420px',
+          },
           fontFamily: {
             sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
             mono: ['"JetBrains Mono"', '"Fira Code"', 'Consolas', 'monospace'],
@@ -35,8 +38,8 @@
   <style>
     /* Strict Utilitarian Scrollbars */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 4px;
+      height: 4px;
     }
     ::-webkit-scrollbar-track {
       background: #090d16;
@@ -49,11 +52,12 @@
       background: #334155;
     }
 
-    /* Vis.js Canvas Matte Background */
+    /* Vis.js Canvas Matte Background with Touch Action */
     #network-canvas {
       background: #090d16;
       width: 100%;
       height: 100%;
+      touch-action: none;
     }
 
     /* Fine Grid Pattern (Utilitarian Engineering Grid) */
@@ -84,184 +88,184 @@
 <body class="bg-slate-950 text-slate-300 font-sans h-screen w-screen flex flex-col overflow-hidden select-none m-0 p-0 text-xs">
 
   <!-- 1. Top Enterprise Header (Edge-to-Edge, 40px) -->
-  <header class="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0 z-20">
+  <header class="h-10 bg-slate-900 border-b border-slate-800 px-2.5 md:px-3 flex items-center justify-between shrink-0 z-30">
     <!-- Left Application Branding & Protocol Info -->
-    <div class="flex items-center space-x-3">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-network-wired text-blue-500 text-sm"></i>
-        <span class="font-semibold text-slate-200 tracking-tight">DVR Protocol Analyzer</span>
+    <div class="flex items-center space-x-2 md:space-x-3 truncate">
+      <div class="flex items-center gap-1.5 md:gap-2">
+        <i class="fa-solid fa-network-wired text-blue-500 text-xs md:text-sm"></i>
+        <span class="font-semibold text-slate-200 tracking-tight text-xs md:text-sm">DVR Analyzer</span>
       </div>
-      <span class="text-slate-700">|</span>
-      <div class="flex items-center gap-2 text-slate-400 text-[11px] font-mono">
-        <span>RFC 1058 (Bellman-Ford)</span>
-        <span class="text-slate-700">/</span>
-        <span class="text-slate-500">UDP Sockets [5001..5012]</span>
+      <span class="text-slate-700 hidden sm:inline">|</span>
+      <div class="hidden sm:flex items-center gap-2 text-slate-400 text-[11px] font-mono">
+        <span>RFC 1058</span>
+        <span class="text-slate-700 hidden md:inline">/</span>
+        <span class="text-slate-500 hidden md:inline">UDP Sockets [5001..5012]</span>
       </div>
     </div>
 
     <!-- Right Status Badges & System Controls -->
-    <div class="flex items-center space-x-2 font-mono text-[11px]">
+    <div class="flex items-center space-x-1.5 md:space-x-2 font-mono text-[10px] md:text-[11px] shrink-0">
       <!-- Operating Mode Badge -->
-      <div id="mode-badge" class="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
-        <span class="text-slate-500">MODE:</span>
+      <div id="mode-badge" class="flex items-center gap-1 bg-slate-950 px-1.5 md:px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
+        <span class="text-slate-500 hidden xs:inline">MODE:</span>
         <span id="mode-text" class="font-semibold text-blue-400">SETUP</span>
       </div>
 
-      <!-- Backend Connection Status -->
-      <div id="backend-badge" class="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
+      <!-- Backend Connection Status (Hidden on tiny screens) -->
+      <div id="backend-badge" class="hidden sm:flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" id="backend-dot"></span>
         <span id="backend-status-text">WS: CONNECTED</span>
       </div>
 
       <!-- Convergence State -->
-      <div id="convergence-status" class="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
-        <span class="text-slate-500">STATUS:</span>
+      <div id="convergence-status" class="flex items-center gap-1 bg-slate-950 px-1.5 md:px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
+        <span class="text-slate-500 hidden xs:inline">STATUS:</span>
         <span id="convergence-text" class="text-amber-400 font-medium">READY</span>
       </div>
 
       <!-- Convergence badge pill (Hidden when pending) -->
-      <div id="convergence-badge" class="hidden px-2 py-0.5 rounded-sm bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-[11px] font-medium flex items-center gap-1">
-        <i class="fa-solid fa-check text-[10px]"></i> CONVERGED
+      <div id="convergence-badge" class="hidden px-1.5 md:px-2 py-0.5 rounded-sm bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-[10px] md:text-[11px] font-medium flex items-center gap-1">
+        <i class="fa-solid fa-check text-[9px]"></i> <span class="hidden xs:inline">CONVERGED</span>
       </div>
 
       <!-- Step Counter -->
-      <div id="step-badge" class="flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
-        <span class="text-slate-500">CYCLE:</span>
+      <div id="step-badge" class="flex items-center gap-1 bg-slate-950 px-1.5 md:px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300">
+        <span class="text-slate-500">C:</span>
         <span id="step-counter" class="font-semibold text-slate-100">0</span>
       </div>
 
       <!-- Reset / Reconfigure Button -->
-      <button id="btn-reset-topology" title="Reconfigure or reset network topology" class="px-2 py-0.5 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer flex items-center gap-1">
+      <button id="btn-reset-topology" title="Reconfigure or reset network topology" class="px-1.5 md:px-2 py-0.5 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer flex items-center gap-1">
         <i class="fa-solid fa-rotate text-slate-400 text-[10px]"></i>
-        <span>RESET</span>
+        <span class="hidden xs:inline">RESET</span>
       </button>
     </div>
   </header>
 
-  <!-- 2. Command Toolbar (Edge-to-Edge, 40px) -->
-  <div class="h-10 bg-slate-900/90 border-b border-slate-800 px-3 flex items-center justify-between shrink-0 z-20 font-sans">
+  <!-- 2. Command Toolbar (Responsive Sticky Bar on Mobile, Top Bar on Desktop) -->
+  <div id="control-bar-wrapper" class="fixed bottom-0 left-0 right-0 w-full z-50 md:relative md:bottom-auto h-11 md:h-10 bg-slate-900 border-t md:border-t-0 md:border-b border-slate-800 px-2 md:px-3 flex items-center justify-between shrink-0 font-sans shadow-lg md:shadow-none">
     
     <!-- Setup Mode Toolbar -->
     <div id="setup-control-strip" class="w-full flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
+      <div class="flex items-center gap-2 truncate">
+        <span class="inline-flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-sm bg-slate-950 border border-slate-800 text-[10px] md:text-[11px] font-mono text-slate-300 shrink-0">
           <i class="fa-solid fa-circle-nodes text-blue-400 text-xs"></i>
-          <span>TOPOLOGY_CONFIG</span>
+          <span class="hidden sm:inline">TOPOLOGY_CONFIG</span>
+          <span class="sm:hidden">CONFIG</span>
         </span>
-        <span id="setup-hint-text" class="text-[11px] text-slate-400 font-sans">
-          Click any two nodes to link them. Connect at least 3 nodes to unlock simulation execution.
+        <span id="setup-hint-text" class="text-[10px] md:text-[11px] text-slate-400 font-sans truncate">
+          Click 2 nodes to bridge link. Min 3 required.
         </span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="btn-reconfigure-nodes" class="px-2.5 py-1 rounded-sm bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs transition cursor-pointer flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5 md:gap-2 shrink-0">
+        <button id="btn-reconfigure-nodes" class="px-2 py-1 md:px-2.5 md:py-1 rounded-sm bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] md:text-xs transition cursor-pointer flex items-center gap-1">
           <i class="fa-solid fa-sliders text-slate-400 text-xs"></i>
-          <span>Set Node Count</span>
+          <span>Nodes</span>
         </button>
 
         <!-- Start Simulation Setup Button: ONLY REVEALED when >= 3 nodes connected -->
-        <button id="btn-start-simulation-setup" class="hidden px-3 py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1.5">
+        <button id="btn-start-simulation-setup" class="hidden px-2.5 py-1 md:px-3 md:py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-[11px] md:text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1.5">
           <i class="fa-solid fa-play text-xs"></i>
-          <span>Start Simulation</span>
+          <span>Start Sim</span>
         </button>
       </div>
     </div>
 
     <!-- Simulation Mode Toolbar (Revealed upon switching) -->
-    <div id="simulation-control-strip" class="hidden w-full flex items-center justify-between">
+    <div id="simulation-control-strip" class="hidden w-full flex items-center justify-between overflow-x-auto">
       <!-- Left Execution Controls -->
-      <div class="flex items-center space-x-2">
-        <button id="btn-start-simulation" class="px-3 py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1.5">
-          <i id="sim-play-icon" class="fa-solid fa-play text-xs"></i>
-          <span id="sim-btn-text">Start Simulation</span>
+      <div class="flex items-center space-x-1.5 md:space-x-2 shrink-0">
+        <button id="btn-start-simulation" class="px-2 py-1 md:px-3 md:py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-[10px] sm:text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1 shrink-0">
+          <i id="sim-play-icon" class="fa-solid fa-play text-[10px] sm:text-xs"></i>
+          <span id="sim-btn-text">Start</span>
         </button>
 
-        <button id="btn-step-forward" class="px-2.5 py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5">
-          <i class="fa-solid fa-forward-step text-slate-400 text-xs"></i>
-          <span>Step Forward</span>
+        <button id="btn-step-forward" class="px-2 py-1 md:px-2.5 md:py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-[10px] sm:text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1 shrink-0">
+          <i class="fa-solid fa-forward-step text-slate-400 text-[10px] sm:text-xs"></i>
+          <span>Step</span>
         </button>
 
-        <div class="h-4 w-px bg-slate-800 mx-1"></div>
+        <div class="h-4 w-px bg-slate-800 mx-0.5"></div>
 
         <!-- Cycle Speed Slider -->
-        <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
-          <span>Speed:</span>
-          <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-24 cursor-pointer">
-          <span id="speed-label" class="text-slate-200 w-8 text-right font-semibold">0.9s</span>
+        <div class="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-400 font-mono shrink-0">
+          <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-12 sm:w-16 md:w-24 cursor-pointer">
+          <span id="speed-label" class="text-slate-200 w-6 sm:w-8 text-right font-semibold text-[10px] sm:text-xs">0.9s</span>
         </div>
       </div>
 
       <!-- Right Action Controls (Add Node & Break Link) -->
-      <div class="flex items-center space-x-2">
-        <button id="btn-add-node" class="px-2.5 py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1.5">
-          <i class="fa-solid fa-plus text-slate-400 text-xs"></i>
-          <span>Add Node</span>
+      <div class="flex items-center space-x-1.5 md:space-x-2 shrink-0 ml-1">
+        <button id="btn-add-node" class="px-2 py-1 md:px-2.5 md:py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-[10px] sm:text-xs border border-slate-700 transition cursor-pointer flex items-center gap-1 shrink-0">
+          <i class="fa-solid fa-plus text-slate-400 text-[10px]"></i>
+          <span>+Node</span>
         </button>
 
-        <button id="btn-break-link" class="px-2.5 py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-slate-600 font-medium text-xs transition cursor-pointer flex items-center gap-1.5">
-          <i class="fa-solid fa-scissors text-amber-500 text-xs"></i>
-          <span>Sever Link</span>
+        <button id="btn-break-link" class="px-2 py-1 md:px-2.5 md:py-1 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-slate-600 font-medium text-[10px] sm:text-xs transition cursor-pointer flex items-center gap-1 shrink-0">
+          <i class="fa-solid fa-scissors text-amber-500 text-[10px]"></i>
+          <span>Sever</span>
         </button>
       </div>
     </div>
 
   </div>
 
-  <!-- 3. Main Workspace Area (Edge-to-Edge) -->
-  <main class="flex-1 flex overflow-hidden relative min-h-0 bg-slate-950">
+  <!-- 3. Main Workspace Area (Mobile-First Stacking: flex-col on mobile, md:flex-row on desktop) -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden relative min-h-0 bg-slate-950 pb-20 md:pb-0">
 
-    <!-- Central Graph Canvas Area (Left / Center) -->
-    <section class="flex-1 h-full relative flex flex-col min-w-0 bg-[#090d16]">
+    <!-- Central Graph Canvas Area (Fixed 48vh on mobile so tables stay visible, flex-1 on desktop) -->
+    <section class="w-full md:flex-1 h-[48vh] md:h-full relative flex flex-col min-w-0 bg-[#090d16] shrink-0 md:shrink border-b md:border-b-0 border-slate-800">
       
-      <!-- Canvas container -->
+      <!-- Canvas container with Touch support -->
       <div id="network-container" class="relative w-full h-full cad-grid">
         <div id="network-canvas"></div>
 
         <!-- Upper-Left Status Badges (Setup Mode) -->
-        <div id="setup-canvas-hints" class="absolute top-2.5 left-3 pointer-events-none flex flex-col gap-1.5 z-10 font-sans">
-          <div class="bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-sm text-[11px] text-slate-300 flex items-center gap-2">
+        <div id="setup-canvas-hints" class="absolute top-2 left-2.5 pointer-events-none flex flex-col gap-1 z-10 font-sans">
+          <div class="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded-sm text-[10px] md:text-[11px] text-slate-300 flex items-center gap-1.5">
             <i class="fa-solid fa-arrow-pointer text-blue-400 text-xs"></i>
-            <span>Interactive Link: Click two nodes to bridge an edge.</span>
+            <span>Tap 2 nodes to bridge link.</span>
           </div>
-          <div class="bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-sm text-[11px] text-slate-400 flex items-center gap-2 font-mono">
+          <div class="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded-sm text-[10px] md:text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
             <span id="setup-progress-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            <span id="setup-progress-text" class="text-slate-300">Connected: 0 / 3 (Min 3 required)</span>
+            <span id="setup-progress-text" class="text-slate-300">Connected: 0 / 3</span>
           </div>
         </div>
 
         <!-- Upper-Left Status Badges (Simulation Mode) -->
-        <div id="sim-canvas-hints" class="hidden absolute top-2.5 left-3 pointer-events-none flex flex-col gap-1.5 z-10 font-sans">
-          <div class="bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-sm text-[11px] text-slate-300 flex items-center gap-2">
+        <div id="sim-canvas-hints" class="hidden absolute top-2 left-2.5 pointer-events-none flex flex-col gap-1 z-10 font-sans">
+          <div class="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded-sm text-[10px] md:text-[11px] text-slate-300 flex items-center gap-1.5">
             <i class="fa-solid fa-lock text-slate-400 text-xs"></i>
-            <span>Topology Locked: Drag nodes to inspect graph layout.</span>
+            <span>Topology Locked: Drag nodes with finger.</span>
           </div>
-          <div class="bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-sm text-[11px] text-slate-400 flex items-center gap-3 font-mono">
-            <span class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Active Link
+          <div class="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded-sm text-[10px] md:text-[11px] text-slate-400 flex items-center gap-2 font-mono">
+            <span class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Active
             </span>
-            <span class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Severed Link (Cost = ∞)
+            <span class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Severed (∞)
             </span>
           </div>
         </div>
 
-        <!-- Upper-Right Canvas Controls (Center View & Physics) -->
-        <div class="absolute top-2.5 right-3 z-10 flex gap-1.5 font-sans">
-          <button id="btn-toggle-physics" class="bg-slate-900/90 hover:bg-slate-800 px-2 py-1 rounded-sm text-[11px] text-slate-300 border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center gap-1">
-            <i class="fa-solid fa-atom text-slate-400 text-xs"></i>
+        <!-- Upper-Right Canvas Controls (Fit & Physics) -->
+        <div class="absolute top-2 right-2.5 z-10 flex gap-1 font-sans">
+          <button id="btn-toggle-physics" class="bg-slate-900/90 hover:bg-slate-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-sm text-[10px] md:text-[11px] text-slate-300 border border-slate-800 transition cursor-pointer flex items-center gap-1">
+            <i class="fa-solid fa-atom text-slate-400 text-[10px]"></i>
             <span id="physics-btn-text">Physics: ON</span>
           </button>
-          <button id="btn-fit-view" class="bg-slate-900/90 hover:bg-slate-800 px-2 py-1 rounded-sm text-[11px] text-slate-300 border border-slate-800 hover:border-slate-700 transition cursor-pointer flex items-center gap-1">
-            <i class="fa-solid fa-expand text-slate-400 text-xs"></i>
-            <span>Fit Graph</span>
+          <button id="btn-fit-view" class="bg-slate-900/90 hover:bg-slate-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-sm text-[10px] md:text-[11px] text-slate-300 border border-slate-800 transition cursor-pointer flex items-center gap-1">
+            <i class="fa-solid fa-expand text-slate-400 text-[10px]"></i>
+            <span>Fit</span>
           </button>
         </div>
 
         <!-- Bottom Canvas Log Stream -->
-        <div class="absolute bottom-2.5 left-3 right-3 z-10 pointer-events-none font-mono">
-          <div class="bg-slate-900/95 rounded-sm px-3 py-1.5 text-[11px] border border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-2 truncate">
-              <span class="text-blue-400 font-semibold">[ENGINE_LOG]</span>
+        <div class="absolute bottom-2 left-2 right-2 z-10 pointer-events-none font-mono">
+          <div class="bg-slate-900/95 rounded-sm px-2.5 py-1 text-[10px] md:text-[11px] border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="text-blue-400 font-semibold">[ENGINE]</span>
               <span id="log-message" class="truncate text-slate-300">Ready. Awaiting topology initialization...</span>
             </div>
           </div>
@@ -270,37 +274,42 @@
       </div>
     </section>
 
-    <!-- Side Panel: Dense & Compact Node Routing Tables -->
-    <aside id="routing-tables-panel" class="hidden w-[440px] bg-slate-900 border-l border-slate-800 flex flex-col h-full overflow-hidden shrink-0 z-10 font-sans">
+    <!-- Side Panel: Dense & Tabbed/Responsive Routing Tables -->
+    <aside id="routing-tables-panel" class="hidden w-full md:w-[440px] bg-slate-900 md:border-l border-slate-800 flex flex-col flex-1 md:flex-initial md:h-full overflow-hidden shrink-0 z-10 font-sans">
       
       <!-- Panel Header -->
-      <div class="h-8 px-3 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
-        <div class="flex items-center gap-2 text-xs font-semibold text-slate-200 uppercase tracking-wide">
+      <div class="h-8 px-2.5 md:px-3 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
+        <div class="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs font-semibold text-slate-200 uppercase tracking-wide">
           <i class="fa-solid fa-table-list text-slate-400"></i>
           <span>Distance Vector Routing Tables</span>
         </div>
-        <span id="node-count-badge" class="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-slate-950 text-slate-400 border border-slate-800">
+        <span id="node-count-badge" class="text-[10px] md:text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-slate-950 text-slate-400 border border-slate-800">
           0 NODES
         </span>
       </div>
 
+      <!-- Mobile Tab Bar (Visible on mobile only to prevent wall-of-text, swipeable) -->
+      <div id="mobile-node-tabs" class="flex md:hidden items-center gap-1 overflow-x-auto p-1.5 bg-slate-950 border-b border-slate-800 shrink-0">
+        <!-- Dynamically injected: [ALL] [Router A] [Router B] ... -->
+      </div>
+
       <!-- Bellman-Ford Algorithmic Reference Bar -->
-      <div class="px-3 py-1 bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 font-mono flex items-center justify-between shrink-0">
+      <div class="px-2.5 md:px-3 py-1 bg-slate-950 border-b border-slate-800 text-[9px] md:text-[10px] text-slate-400 font-mono flex items-center justify-between shrink-0">
         <span>Formula: D_x(y) = min_v { c(x,v) + D_v(y) }</span>
-        <span class="text-slate-500">RFC 1058 Matrix</span>
+        <span class="hidden sm:inline text-slate-500">RFC 1058 Matrix</span>
       </div>
 
       <!-- Scrollable List of Tables for Each Node -->
-      <div id="routing-tables-container" class="flex-1 overflow-y-auto p-2 space-y-2">
+      <div id="routing-tables-container" class="flex-1 overflow-y-auto p-1.5 md:p-2 space-y-1.5 md:space-y-2">
         <!-- Tables are injected dynamically here upon starting simulation -->
       </div>
     </aside>
 
   </main>
 
-  <!-- 4. Enterprise Bottom Status Bar (Edge-to-Edge, Exactly 24px) -->
-  <footer class="h-6 bg-slate-900 border-t border-slate-800 px-3 flex items-center justify-between shrink-0 z-30 text-[11px] font-mono text-slate-400 select-none">
-    <div class="flex items-center gap-2">
+  <!-- 4. Enterprise Bottom Status Bar (24px, fixed above action bar on mobile, footer on desktop) -->
+  <footer class="fixed bottom-11 md:relative md:bottom-auto left-0 right-0 w-full h-6 bg-slate-900 border-t border-slate-800 px-2 md:px-3 flex items-center justify-between shrink-0 z-40 text-[10px] md:text-[11px] font-mono text-slate-400 select-none">
+    <div class="flex items-center gap-1.5 md:gap-2 truncate">
       <span id="status-bar-sim-state" class="text-slate-300">Simulation: Ready</span>
       <span class="text-slate-700">|</span>
       <span id="status-bar-conv-state" class="text-slate-300">Convergence Status: Pending</span>
@@ -308,7 +317,7 @@
       <span id="status-bar-uptime" class="text-slate-300">Uptime: 00:00</span>
     </div>
 
-    <div class="flex items-center gap-3 text-slate-500">
+    <div class="hidden sm:flex items-center gap-3 text-slate-500 shrink-0">
       <span id="status-bar-metrics">Nodes: 0 | Edges: 0</span>
       <span class="text-slate-700">|</span>
       <span class="text-slate-400">Protocol: DV_RIP</span>
@@ -320,11 +329,11 @@
   </footer>
 
   <!-- ========================================== -->
-  <!-- Modals (Strict Enterprise Flat Design)    -->
+  <!-- Modals (Strict Enterprise Responsive)     -->
   <!-- ========================================== -->
 
   <!-- Modal 1: Initial Setup Modal (Shown on Load) -->
-  <div id="modal-initial-setup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center">
+  <div id="modal-initial-setup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-3">
     <div class="bg-slate-900 w-full max-w-sm rounded-sm p-4 border border-slate-700 shadow-2xl font-sans">
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
         <div class="flex items-center gap-2">
@@ -346,7 +355,7 @@
       </div>
 
       <div class="flex justify-end gap-2 mt-4 pt-2.5 border-t border-slate-800">
-        <button id="modal-setup-confirm" class="w-full py-1.5 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs border border-blue-600 transition cursor-pointer flex items-center justify-center gap-1.5">
+        <button id="modal-setup-confirm" class="w-full py-2 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs border border-blue-600 transition cursor-pointer flex items-center justify-center gap-1.5">
           <span>Generate Router Nodes</span>
           <i class="fa-solid fa-arrow-right text-[10px]"></i>
         </button>
@@ -355,14 +364,14 @@
   </div>
 
   <!-- Modal 2: Enter Link Cost Modal -->
-  <div id="modal-link-cost" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+  <div id="modal-link-cost" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
     <div class="bg-slate-900 w-full max-w-sm rounded-sm p-4 border border-slate-700 shadow-2xl font-sans">
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-link text-blue-400 text-xs"></i>
           <h3 class="font-semibold text-xs text-slate-200">Bridge Network Link</h3>
         </div>
-        <button id="modal-link-cost-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer">
+        <button id="modal-link-cost-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer p-1">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
@@ -390,14 +399,14 @@
   </div>
 
   <!-- Modal 3: Add Node Modal (Simulation Mode) -->
-  <div id="modal-add-node" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+  <div id="modal-add-node" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
     <div class="bg-slate-900 w-full max-w-sm rounded-sm p-4 border border-slate-700 shadow-2xl font-sans">
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-plus text-blue-400 text-xs"></i>
           <h3 class="font-semibold text-xs text-slate-200">Provision New Router Node</h3>
         </div>
-        <button id="modal-add-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer">
+        <button id="modal-add-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer p-1">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
@@ -429,14 +438,14 @@
   </div>
 
   <!-- Modal 4: Break Link Modal (Simulation Mode) -->
-  <div id="modal-break-link" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+  <div id="modal-break-link" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
     <div class="bg-slate-900 w-full max-w-sm rounded-sm p-4 border border-slate-700 shadow-2xl font-sans">
       <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-scissors text-amber-500 text-xs"></i>
           <h3 class="font-semibold text-xs text-slate-200">Toggle Link State</h3>
         </div>
-        <button id="modal-break-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer">
+        <button id="modal-break-close" class="text-slate-400 hover:text-slate-200 transition cursor-pointer p-1">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
@@ -468,6 +477,7 @@
     let appMode = 'setup';
     let selectedNodeForLink = null;
     let pendingLinkNodes = null;
+    let selectedMobileNode = 'ALL'; // Tabbed mobile table filter
 
     // --- Simulator State & Metrics ---
     const INF = 999;
@@ -642,6 +652,12 @@
       openInitialSetupModal();
     });
 
+    window.addEventListener('resize', () => {
+      if (network) network.redraw();
+      updatePlayButtonUI(isRunning);
+      updateBreakLinkButtonUI();
+    });
+
     // ==========================================
     // 1. Setup Mode Functions
     // ==========================================
@@ -658,7 +674,7 @@
       document.getElementById('simulation-control-strip').classList.add('hidden');
 
       document.getElementById('mode-text').textContent = 'SETUP';
-      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1 bg-slate-950 px-1.5 md:px-2 py-0.5 rounded-sm border border-slate-800 text-slate-300';
 
       document.getElementById('setup-canvas-hints').classList.remove('hidden');
       document.getElementById('sim-canvas-hints').classList.add('hidden');
@@ -685,7 +701,7 @@
       visNodes.clear();
       visEdges.clear();
 
-      const radius = 170;
+      const radius = 150;
       const angleStep = (2 * Math.PI) / count;
       nodesList.forEach((id, idx) => {
         const x = Math.round(radius * Math.cos(idx * angleStep));
@@ -700,7 +716,7 @@
       document.getElementById('modal-initial-setup').classList.add('hidden');
       updateSetupProgressUI();
       network.fit({ animation: { duration: 400 } });
-      setLogMessage(`Spawned ${count} router instances: [${nodesList.join(', ')}]. Click pairs of nodes to configure link costs.`);
+      setLogMessage(`Spawned ${count} router instances: [${nodesList.join(', ')}]. Tap pairs of nodes to configure link costs.`);
       updateStatusBarTelemetry();
     }
 
@@ -721,7 +737,7 @@
       const text = document.getElementById('setup-progress-text');
       const startBtn = document.getElementById('btn-start-simulation-setup');
 
-      text.textContent = `Connected: ${connectedCount} / 3 (Min 3 required)`;
+      text.textContent = `Connected: ${connectedCount} / 3`;
 
       if (connectedCount >= 3) {
         dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
@@ -758,7 +774,7 @@
       visEdges.add(formatEdgeStyle(newEdge, edgeIndex));
 
       document.getElementById('modal-link-cost').classList.add('hidden');
-      setLogMessage(`Bridged link between Node ${newEdge.from} <---> Node ${newEdge.to} with Metric: ${newEdge.cost}.`);
+      setLogMessage(`Bridged link between Node ${newEdge.from} <---> Node ${newEdge.to} (Metric: ${newEdge.cost}).`);
 
       pendingLinkNodes = null;
       updateSetupProgressUI();
@@ -783,7 +799,7 @@
 
       // Update badges
       document.getElementById('mode-text').textContent = 'SIMULATION';
-      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-slate-950 px-2 py-0.5 rounded-sm border border-slate-800 text-blue-400';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1 bg-slate-950 px-1.5 md:px-2 py-0.5 rounded-sm border border-slate-800 text-blue-400';
 
       document.getElementById('setup-canvas-hints').classList.add('hidden');
       document.getElementById('sim-canvas-hints').classList.remove('hidden');
@@ -807,7 +823,7 @@
     }
 
     // ==========================================
-    // 2. Vis.js Setup & Styling (Matte Enterprise)
+    // 2. Vis.js Setup & Styling (Touch Supported)
     // ==========================================
     function initNetwork() {
       const container = document.getElementById('network-canvas');
@@ -846,6 +862,7 @@
             highlight: '#38bdf8',
             hover: '#38bdf8'
           },
+          selectionWidth: 3,
           smooth: {
             type: 'continuous',
             roundness: 0.1
@@ -856,12 +873,12 @@
           enabled: true,
           solver: 'barnesHut',
           barnesHut: {
-            gravitationalConstant: -3200,
+            gravitationalConstant: -2800,
             centralGravity: 0.25,
-            springLength: 150,
+            springLength: 130,
             springConstant: 0.04,
             damping: 0.09,
-            avoidOverlap: 0.3
+            avoidOverlap: 0.35
           },
           stabilization: {
             enabled: true,
@@ -874,7 +891,9 @@
           selectConnectedEdges: false,
           dragNodes: true,
           zoomView: true,
-          dragView: true
+          dragView: true,
+          selectable: true,
+          multiselect: false
         }
       };
 
@@ -914,7 +933,7 @@
         }
       });
 
-      // Node and Edge click handling
+      // Node and Edge tap/click handling (Supports mouse & touch)
       network.on('click', (params) => {
         if (appMode === 'setup') {
           if (params.nodes.length > 0) {
@@ -926,7 +945,7 @@
                 id: clickedNodeId,
                 color: { background: '#1e293b', border: '#38bdf8' }
               });
-              setLogMessage(`Selected Node ${clickedNodeId}. Click target node to link.`);
+              setLogMessage(`Selected Node ${clickedNodeId}. Tap second node to bridge link.`);
             } else if (selectedNodeForLink === clickedNodeId) {
               visNodes.update(formatNodeStyle({ id: clickedNodeId }));
               selectedNodeForLink = null;
@@ -988,15 +1007,17 @@
       const btn = document.getElementById('btn-break-link');
       if (!btn) return;
 
+      const isMobile = window.innerWidth < 640;
       if (selectedEdge) {
-        const actionLabel = selectedEdge.broken ? 'Restore Link' : 'Sever Link';
-        btn.innerHTML = `<i class="fa-solid fa-scissors text-amber-500 text-xs"></i> <span>${actionLabel} (${selectedEdge.source}<->${selectedEdge.target})</span>`;
+        const actionLabel = selectedEdge.broken ? 'Restore' : 'Sever';
+        const linkSuffix = isMobile ? '' : ` (${selectedEdge.source}<->${selectedEdge.target})`;
+        btn.innerHTML = `<i class="fa-solid fa-scissors text-amber-500 text-[10px]"></i> <span>${actionLabel}${linkSuffix}</span>`;
       } else {
-        btn.innerHTML = `<i class="fa-solid fa-scissors text-amber-500 text-xs"></i> <span>Sever Link</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-scissors text-amber-500 text-[10px]"></i> <span>Sever</span>`;
       }
     }
 
-    // Vis.js Node styling: Matte slate circle with crisp border and clean text
+    // Vis.js Node styling: Touch-friendly matte circle with crisp border
     function formatNodeStyle(node) {
       return {
         id: node.id,
@@ -1020,7 +1041,8 @@
           size: 11,
           face: '"JetBrains Mono", monospace'
         },
-        size: 20
+        size: 21,
+        margin: 8
       };
     }
 
@@ -1049,12 +1071,13 @@
         },
         dashes: isBroken ? [4, 4] : false,
         width: 1.5,
+        selectionWidth: 3,
         shadow: false
       };
     }
 
     // ==========================================
-    // 3. Routing Tables: Dense & Compact Layout
+    // 3. Routing Tables: Dense & Tabbed/Responsive
     // ==========================================
     function initRoutingTables() {
       stepCount = 0;
@@ -1097,44 +1120,83 @@
       return neighbors;
     }
 
+    // Render mobile node navigation tabs (Swipeable horizontally)
+    function renderMobileNodeTabs() {
+      const tabsContainer = document.getElementById('mobile-node-tabs');
+      if (!tabsContainer) return;
+      tabsContainer.innerHTML = '';
+
+      // All tab
+      const allBtn = document.createElement('button');
+      allBtn.className = `px-2 py-0.5 rounded-sm text-[10px] font-mono transition cursor-pointer shrink-0 ${
+        selectedMobileNode === 'ALL'
+          ? 'bg-blue-600 text-white font-semibold'
+          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+      }`;
+      allBtn.textContent = 'ALL';
+      allBtn.onclick = () => {
+        selectedMobileNode = 'ALL';
+        renderAllRoutingTables();
+      };
+      tabsContainer.appendChild(allBtn);
+
+      // Node individual tabs
+      nodesList.forEach(nodeId => {
+        const btn = document.createElement('button');
+        btn.className = `px-2 py-0.5 rounded-sm text-[10px] font-mono transition cursor-pointer shrink-0 ${
+          selectedMobileNode === nodeId
+            ? 'bg-blue-600 text-white font-semibold'
+            : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+        }`;
+        btn.textContent = `Router ${nodeId}`;
+        btn.onclick = () => {
+          selectedMobileNode = nodeId;
+          renderAllRoutingTables();
+        };
+        tabsContainer.appendChild(btn);
+      });
+    }
+
     function renderAllRoutingTables() {
       const container = document.getElementById('routing-tables-container');
       if (!container) return;
 
+      renderMobileNodeTabs();
       container.innerHTML = '';
       document.getElementById('node-count-badge').textContent = `${nodesList.length} NODES`;
 
       nodesList.forEach(nodeId => {
+        const isHiddenOnMobile = (selectedMobileNode !== 'ALL' && selectedMobileNode !== nodeId);
         const card = document.createElement('div');
-        card.className = 'bg-slate-950 border border-slate-800 rounded-sm overflow-hidden mb-2';
+        card.className = `bg-slate-950 border border-slate-800 rounded-sm overflow-hidden mb-1.5 md:mb-2 ${isHiddenOnMobile ? 'hidden md:block' : 'block'}`;
 
         // Card Header
         const header = document.createElement('div');
-        header.className = 'px-2.5 py-1 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-200 font-mono';
+        header.className = 'px-2 md:px-2.5 py-1 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-200 font-mono';
         header.innerHTML = `
           <div class="flex items-center gap-1.5">
             <span class="w-4 h-4 rounded-sm bg-slate-800 text-blue-400 font-bold text-[10px] flex items-center justify-center border border-slate-700">
               ${nodeId}
             </span>
-            <span>Router ${nodeId} Matrix</span>
+            <span class="text-[11px] md:text-xs">Router ${nodeId} Matrix</span>
           </div>
-          <span class="text-[10px] text-slate-500 font-mono">Instance: 127.0.0.1:500${nodesList.indexOf(nodeId) + 1}</span>
+          <span class="text-[9px] md:text-[10px] text-slate-500 font-mono">127.0.0.1:500${nodesList.indexOf(nodeId) + 1}</span>
         `;
         card.appendChild(header);
 
-        // Dense Tabular Data: Dest | Next Hop | Metric (Cost) | Updated (ms)
+        // Dense Tabular Data: Dest | Next Hop | Metric | Updated
         const table = document.createElement('table');
-        table.className = 'w-full text-left text-xs font-mono';
+        table.className = 'w-full text-left font-mono';
         table.innerHTML = `
           <thead>
-            <tr class="text-[10px] text-slate-400 bg-slate-900/60 border-b border-slate-800 uppercase">
-              <th class="py-1 px-2 font-medium">Dest</th>
-              <th class="py-1 px-2 font-medium">Next Hop</th>
-              <th class="py-1 px-2 font-medium text-right">Metric (Cost)</th>
-              <th class="py-1 px-2 font-medium text-right">Updated (ms)</th>
+            <tr class="text-[9px] md:text-[10px] text-slate-400 bg-slate-900/60 border-b border-slate-800 uppercase">
+              <th class="py-1 px-1.5 md:px-2 font-medium">Dest</th>
+              <th class="py-1 px-1.5 md:px-2 font-medium">Next Hop</th>
+              <th class="py-1 px-1.5 md:px-2 font-medium text-right">Metric</th>
+              <th class="py-1 px-1.5 md:px-2 font-medium text-right">Updated</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-900/80 text-[11px]">
+          <tbody class="divide-y divide-slate-900/80 text-[10px] md:text-[11px]">
             ${nodesList.map(destId => {
               const rowKey = `${nodeId}-${destId}`;
               const isUpdated = updatedRowKeys.has(rowKey);
@@ -1149,17 +1211,17 @@
               
               const updatedMsVal = (rowData && rowData.updatedMs) ? `${rowData.updatedMs}ms` : '0ms';
 
-              // Persisting row highlight without flashy glows: clean matte border and subtle background
+              // Persisting row highlight without flashy glows
               const highlightClasses = isUpdated 
                 ? 'bg-slate-800/90 border-l-2 border-blue-500 text-white font-medium' 
                 : 'bg-transparent text-slate-300';
               
               return `
                 <tr id="row-${rowKey}" class="${highlightClasses} transition-colors duration-200">
-                  <td class="py-1 px-2 font-semibold text-slate-200">${destId}</td>
-                  <td class="py-1 px-2">${nextHopDisplay}</td>
-                  <td class="py-1 px-2 text-right">${costDisplay}</td>
-                  <td class="py-1 px-2 text-right text-slate-400">${updatedMsVal}</td>
+                  <td class="py-1 px-1.5 md:px-2 font-semibold text-slate-200">${destId}</td>
+                  <td class="py-1 px-1.5 md:px-2">${nextHopDisplay}</td>
+                  <td class="py-1 px-1.5 md:px-2 text-right">${costDisplay}</td>
+                  <td class="py-1 px-1.5 md:px-2 text-right text-slate-400">${updatedMsVal}</td>
                 </tr>
               `;
             }).join('')}
@@ -1299,14 +1361,16 @@
       const btnIcon = document.getElementById('sim-play-icon');
       const btn = document.getElementById('btn-start-simulation');
 
+      const isMobile = window.innerWidth < 640;
+
       if (isRunning) {
-        if (btnText) btnText.textContent = 'Pause Simulation';
-        if (btnIcon) btnIcon.className = 'fa-solid fa-pause text-xs';
-        if (btn) btn.className = 'px-3 py-1 rounded-sm bg-amber-600 hover:bg-amber-500 text-slate-950 font-medium text-xs border border-amber-500 transition cursor-pointer flex items-center gap-1.5';
+        if (btnText) btnText.textContent = isMobile ? 'Pause' : 'Pause Simulation';
+        if (btnIcon) btnIcon.className = 'fa-solid fa-pause text-[10px] sm:text-xs';
+        if (btn) btn.className = 'px-2 py-1 md:px-3 md:py-1 rounded-sm bg-amber-600 hover:bg-amber-500 text-slate-950 font-medium text-[10px] sm:text-xs border border-amber-500 transition cursor-pointer flex items-center gap-1 shrink-0';
       } else {
-        if (btnText) btnText.textContent = 'Start Simulation';
-        if (btnIcon) btnIcon.className = 'fa-solid fa-play text-xs';
-        if (btn) btn.className = 'px-3 py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1.5';
+        if (btnText) btnText.textContent = isMobile ? 'Start' : 'Start Simulation';
+        if (btnIcon) btnIcon.className = 'fa-solid fa-play text-[10px] sm:text-xs';
+        if (btn) btn.className = 'px-2 py-1 md:px-3 md:py-1 rounded-sm bg-blue-700 hover:bg-blue-600 text-white font-medium text-[10px] sm:text-xs border border-blue-600 transition cursor-pointer flex items-center gap-1 shrink-0';
       }
       updateStatusBarTelemetry();
     }
