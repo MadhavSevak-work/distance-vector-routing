@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Distance Vector Routing Simulator</title>
+  <title>DVR :: Network Operations Center Monitor</title>
   
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: JetBrains Mono & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -24,15 +24,12 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['Inter', 'sans-serif'],
           },
           colors: {
-            amberBrand: '#C2410C',
-            amberBrandHover: '#9A3412',
-            slateDark: '#1E293B',
-            redBrand: '#991B1B',
-            redBrandHover: '#7F1D1D'
+            cyanNoc: '#06b6d4',
+            neonRed: '#ef4444',
           }
         }
       }
@@ -40,100 +37,112 @@
   </script>
 
   <style>
-    /* Custom Slim Scrollbars */
+    /* Custom NOC Terminal Scrollbars */
     ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+      width: 4px;
+      height: 4px;
     }
     ::-webkit-scrollbar-track {
-      background: #F4F4F5;
+      background: #020617;
     }
     ::-webkit-scrollbar-thumb {
-      background: #D4D4D8;
-      border-radius: 4px;
+      background: #1e293b;
+      border-radius: 2px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #A1A1AA;
+      background: #0891b2;
     }
 
-    /* Vis.js Network Canvas */
+    /* Vis.js Canvas Background (Deep Radar Space) */
     #network-canvas {
-      background: #FFFFFF;
+      background: radial-gradient(circle at center, #071329 0%, #020617 100%);
       width: 100%;
       height: 100%;
     }
 
-    /* Custom range slider styling */
+    /* Subtle Radar Grid */
+    .grid-bg {
+      background-size: 28px 28px;
+      background-image: 
+        radial-gradient(circle, rgba(6, 182, 212, 0.12) 1px, transparent 1px);
+    }
+
+    /* Custom Terminal Range Slider */
     input[type=range] {
       -webkit-appearance: none;
-      background: #E4E4E7;
+      background: #0f172a;
       height: 4px;
       border-radius: 2px;
+      border: 1px solid rgba(6, 182, 212, 0.25);
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
       height: 14px;
       width: 14px;
-      border-radius: 50%;
-      background: #1E293B;
+      border-radius: 2px;
+      background: #06b6d4;
       cursor: pointer;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
     }
 
-    /* Subtle row update animation */
+    /* Row update animation */
     @keyframes highlightRow {
-      0% { background-color: #F4F4F5; }
+      0% { background-color: rgba(6, 182, 212, 0.3); }
       100% { background-color: transparent; }
     }
     .row-updated {
-      animation: highlightRow 1.4s ease-out;
+      animation: highlightRow 1.2s ease-out;
     }
   </style>
 </head>
-<body class="bg-[#F4F4F5] text-slate-800 font-sans h-screen flex flex-col p-3 md:p-4 gap-3 overflow-hidden select-none">
+<body class="bg-slate-950 text-slate-200 font-mono h-screen flex flex-col p-3 md:p-3.5 gap-3 overflow-hidden select-none">
 
-  <!-- Top Status Bar -->
-  <header class="h-14 bg-white border border-zinc-200 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
+  <!-- Top Status Bar (NOC Terminal Header) -->
+  <header class="h-14 bg-slate-900 border border-cyan-900/30 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-lg z-20">
     <!-- Left branding -->
     <div class="flex items-center space-x-3">
-      <div class="w-7 h-7 rounded-lg bg-[#1E293B] text-white flex items-center justify-center text-xs shadow-xs">
-        <i class="fa-solid fa-diagram-project"></i>
+      <div class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-700/80 text-cyan-400 flex items-center justify-center text-xs shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+        <i class="fa-solid fa-terminal"></i>
       </div>
-      <h1 class="text-sm font-semibold tracking-tight text-[#1E293B]">
-        Distance Vector Routing Simulator
-      </h1>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-cyan-400 tracking-wider">NOC::DVR</span>
+        <span class="text-slate-600 text-xs">/</span>
+        <h1 class="text-xs font-medium text-slate-200 tracking-wide uppercase">
+          Distance Vector Routing Monitor
+        </h1>
+      </div>
     </div>
 
     <!-- Right status pill tags -->
     <div class="flex items-center space-x-2.5">
       <!-- Mode badge -->
-      <div id="mode-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
-        <span class="text-xs text-zinc-500">Mode:</span>
-        <span id="mode-text" class="font-semibold text-zinc-800">Setup</span>
+      <div id="mode-badge" class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-cyan-400">
+        <span class="text-slate-500">SYS_MODE:</span>
+        <span id="mode-text" class="font-semibold text-cyan-300">SETUP</span>
       </div>
 
       <!-- Backend connection indicator -->
-      <div id="backend-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" id="backend-dot"></span>
-        <span id="backend-status-text" class="text-xs">Connected</span>
+      <div id="backend-badge" class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-slate-300">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" id="backend-dot"></span>
+        <span id="backend-status-text">LINK: ONLINE</span>
       </div>
 
       <!-- Convergence Status capsule -->
-      <div id="convergence-status" class="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-medium text-emerald-800">
-        <span class="text-xs text-zinc-500">Status:</span>
-        <span id="convergence-text">Ready</span>
+      <div id="convergence-status" class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-cyan-300">
+        <span class="text-slate-500">STATE:</span>
+        <span id="convergence-text">READY</span>
       </div>
 
       <!-- Step Counter capsule -->
-      <div id="step-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
-        <span class="text-xs text-zinc-500">Step:</span>
-        <span id="step-counter" class="font-semibold text-zinc-800">0</span>
+      <div id="step-badge" class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-slate-200">
+        <span class="text-slate-500">CYCLE:</span>
+        <span id="step-counter" class="font-bold text-cyan-400">0</span>
       </div>
 
-      <!-- Reset / New Setup button -->
-      <button id="btn-reset-topology" title="Reconfigure or reset network topology" class="px-2.5 py-1 rounded-md bg-white hover:bg-zinc-50 text-zinc-700 text-xs border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
-        <i class="fa-solid fa-rotate-left text-zinc-500"></i>
-        <span>New Setup</span>
+      <!-- Reboot Topology button -->
+      <button id="btn-reset-topology" title="Reconfigure or reset network topology" class="px-2.5 py-1 rounded-md bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 text-[11px] border border-cyan-900/50 hover:border-cyan-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
+        <i class="fa-solid fa-arrows-rotate text-cyan-500 text-[10px]"></i>
+        <span>RESET_SYS</span>
       </button>
     </div>
   </header>
@@ -142,63 +151,63 @@
   <main class="flex-1 flex gap-3 overflow-hidden relative min-h-0">
 
     <!-- Central Graph Canvas Card (Left / Center) -->
-    <section class="flex-1 h-full relative flex flex-col min-w-0 bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+    <section class="flex-1 h-full relative flex flex-col min-w-0 bg-slate-900 border border-cyan-900/30 rounded-xl shadow-lg overflow-hidden">
       
       <!-- Canvas container -->
-      <div id="network-container" class="relative w-full h-full bg-white">
+      <div id="network-container" class="relative w-full h-full grid-bg">
         <div id="network-canvas"></div>
 
         <!-- Upper-Left Badges in Setup Mode -->
         <div id="setup-canvas-hints" class="absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
-          <div class="bg-white/95 px-2.5 py-1 rounded-md text-xs text-zinc-600 flex items-center gap-1.5 border border-zinc-200 shadow-xs">
-            <i class="fa-solid fa-hand-pointer text-amber-600 text-xs"></i>
-            <span>Setup Mode: <strong class="text-zinc-800">Click two nodes</strong> to create a link</span>
+          <div class="bg-slate-950/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs text-cyan-300 flex items-center gap-2 border border-cyan-900/50 shadow-md">
+            <i class="fa-solid fa-hand-pointer text-cyan-400 text-xs animate-pulse"></i>
+            <span>SETUP_MODE: <strong class="text-white">Click 2 nodes</strong> to bridge link</span>
           </div>
-          <div class="bg-white/95 px-2.5 py-1 rounded-md text-[11px] text-zinc-500 flex items-center gap-2 border border-zinc-200 shadow-xs">
-            <span class="flex items-center gap-1">
-              <span id="setup-progress-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              <span id="setup-progress-text">Connected: 0 / 3 nodes (Minimum 3 needed)</span>
+          <div class="bg-slate-950/90 backdrop-blur-sm px-3 py-1 rounded-md text-[11px] text-slate-400 flex items-center gap-2 border border-cyan-900/40">
+            <span class="flex items-center gap-1.5">
+              <span id="setup-progress-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span>
+              <span id="setup-progress-text" class="text-slate-300">CONNECTED: 0 / 3 (MIN 3 REQUIRED)</span>
             </span>
           </div>
         </div>
 
         <!-- Upper-Left Badges in Simulation Mode (Hidden initially) -->
         <div id="sim-canvas-hints" class="hidden absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
-          <div class="bg-white/95 px-2.5 py-1 rounded-md text-xs text-zinc-600 flex items-center gap-1.5 border border-zinc-200 shadow-xs">
-            <i class="fa-solid fa-arrows-up-down-left-right text-zinc-400 text-[10px]"></i>
-            <span>Topology Locked: Drag nodes to rearrange view</span>
+          <div class="bg-slate-950/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs text-cyan-300 flex items-center gap-2 border border-cyan-900/50 shadow-md">
+            <i class="fa-solid fa-lock text-cyan-400 text-xs"></i>
+            <span>TOPOLOGY_LOCKED: Drag nodes to rearrange vectors</span>
           </div>
-          <div class="bg-white/95 px-2.5 py-1 rounded-md text-[11px] text-zinc-500 flex items-center gap-2 border border-zinc-200 shadow-xs">
-            <span class="flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active Link
+          <div class="bg-slate-950/90 backdrop-blur-sm px-3 py-1 rounded-md text-[11px] text-slate-400 flex items-center gap-3 border border-cyan-900/40">
+            <span class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> ACTIVE LINK
             </span>
-            <span class="flex items-center gap-1 ml-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#991B1B]"></span> Severed Link
+            <span class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_#ef4444]"></span> SEVERED LINK
             </span>
           </div>
         </div>
 
         <!-- Upper-Right Utility Controls -->
         <div class="absolute top-3.5 right-4 z-10 flex gap-2">
-          <button id="btn-toggle-physics" class="bg-white hover:bg-zinc-50 px-2.5 py-1 rounded-md text-xs text-zinc-700 border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
-            <i class="fa-solid fa-gear text-zinc-400 text-[10px]"></i>
-            <span id="physics-btn-text">Physics: ON</span>
+          <button id="btn-toggle-physics" class="bg-slate-950 hover:bg-slate-800 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-cyan-300 border border-cyan-900/50 hover:border-cyan-700 transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+            <i class="fa-solid fa-atom text-cyan-400 text-xs"></i>
+            <span id="physics-btn-text">PHYSICS: ON</span>
           </button>
-          <button id="btn-fit-view" class="bg-white hover:bg-zinc-50 px-2.5 py-1 rounded-md text-xs text-zinc-700 border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
-            <i class="fa-solid fa-expand text-zinc-400 text-[10px]"></i>
-            <span>Center</span>
+          <button id="btn-fit-view" class="bg-slate-950 hover:bg-slate-800 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-cyan-300 border border-cyan-900/50 hover:border-cyan-700 transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+            <i class="fa-solid fa-expand text-cyan-400 text-xs"></i>
+            <span>CENTER</span>
           </button>
         </div>
 
-        <!-- Bottom Console / Log Row -->
+        <!-- Bottom Console / NOC Ticker -->
         <div class="absolute bottom-3.5 left-4 right-4 z-10 pointer-events-none">
-          <div class="bg-white/95 rounded-lg px-3.5 py-2 text-xs border border-zinc-200 shadow-xs flex items-center justify-between">
-            <div class="flex items-center gap-2 truncate text-zinc-600 font-mono text-[11px]">
-              <span class="text-zinc-800 font-semibold">[LOG]</span>
-              <span id="log-message" class="truncate">Setup Mode: Initializing network...</span>
+          <div class="bg-slate-950/95 rounded-lg px-4 py-2 text-xs border border-cyan-900/40 shadow-xl flex items-center justify-between">
+            <div class="flex items-center gap-2.5 truncate font-mono text-[11px]">
+              <span class="text-cyan-400 font-bold">&gt; [NOC_LOG]</span>
+              <span id="log-message" class="truncate text-slate-300">Setup Mode: Initializing network canvas...</span>
             </div>
-            <div id="convergence-badge" class="shrink-0 ml-3 text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-              <i class="fa-solid fa-check text-[10px]"></i> Converged
+            <div id="convergence-badge" class="shrink-0 ml-3 text-[11px] font-bold px-2.5 py-0.5 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-800/80 flex items-center gap-1.5 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
+              <i class="fa-solid fa-circle-check text-[10px]"></i> CONVERGED
             </div>
           </div>
         </div>
@@ -206,22 +215,22 @@
       </div>
     </section>
 
-    <!-- Side Panel: Node Routing Tables (Right) - HIDDEN initially in Setup Mode -->
-    <aside id="routing-tables-panel" class="hidden w-96 bg-white border border-zinc-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden shrink-0 z-10">
+    <!-- Side Panel: Node Routing Tables (Terminal Matrix) - HIDDEN initially in Setup Mode -->
+    <aside id="routing-tables-panel" class="hidden w-96 bg-slate-900 border border-cyan-900/30 rounded-xl shadow-lg flex flex-col h-full overflow-hidden shrink-0 z-10 font-mono">
       <!-- Panel Header -->
-      <div class="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-slate-900">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-zinc-500 text-xs"></i>
-          <h2 class="font-semibold text-xs tracking-tight text-[#1E293B]">Routing Tables</h2>
+          <i class="fa-solid fa-table-cells text-cyan-400 text-xs"></i>
+          <h2 class="font-bold text-xs tracking-wider text-cyan-300 uppercase">&gt; ROUTING_TABLES</h2>
         </div>
-        <span id="node-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 border border-zinc-200">
-          0 Nodes
+        <span id="node-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-950 text-cyan-400 border border-cyan-900/50">
+          0 NODES
         </span>
       </div>
 
       <!-- Bellman-Ford Formula Row -->
-      <div class="px-4 py-2 bg-zinc-50/60 border-b border-zinc-100 text-[11px] text-zinc-500 font-mono flex items-center justify-between">
-        <span>Bellman-Ford: d<sub>x</sub>(y) = min { c(x,v) + d<sub>v</sub>(y) }</span>
+      <div class="px-4 py-1.5 bg-slate-950 border-b border-cyan-900/30 text-[11px] text-cyan-600/90 font-mono flex items-center justify-between">
+        <span>DV_ALG: d_x(y) = min { c(x,v) + d_v(y) }</span>
       </div>
 
       <!-- Scrollable List of Tables for Each Node -->
@@ -233,68 +242,67 @@
   </main>
 
   <!-- Bottom Control Strip -->
-  <footer class="h-16 bg-white border border-zinc-200 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
+  <footer class="h-16 bg-slate-900 border border-cyan-900/30 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-lg z-20 font-mono">
     
-    <!-- 1. Setup Mode Controls (Visible in Setup Mode) -->
+    <!-- 1. Setup Mode Controls -->
     <div id="setup-control-strip" class="w-full flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700">
-          <i class="fa-solid fa-diagram-project text-amber-600 text-xs"></i>
-          <span>Topology Setup</span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950 border border-cyan-900/50 text-xs font-mono text-cyan-400">
+          <i class="fa-solid fa-code-fork text-cyan-400 text-xs"></i>
+          <span>CONFIG_TOPOLOGY</span>
         </span>
-        <span id="setup-hint-text" class="text-xs text-zinc-500 font-mono">
-          Click two nodes to create a link. Connect at least 3 nodes to begin.
+        <span id="setup-hint-text" class="text-xs text-slate-400 font-mono">
+          Click 2 nodes to add link. Connect &gt;= 3 nodes to begin execution.
         </span>
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button id="btn-reconfigure-nodes" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-sliders text-zinc-400"></i>
-          <span>Change Node Count</span>
+        <button id="btn-reconfigure-nodes" class="px-3.5 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-cyan-900/50 text-slate-300 hover:text-cyan-300 font-mono text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-sliders text-cyan-500 text-xs"></i>
+          <span>SET_NODE_COUNT</span>
         </button>
 
         <!-- Start Simulation Button in Setup Mode: ONLY SHOWN when >= 3 nodes connected -->
-        <button id="btn-start-simulation-setup" class="hidden px-5 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-play"></i>
-          <span>Start Simulation</span>
+        <button id="btn-start-simulation-setup" class="hidden px-5 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] font-mono text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-play text-cyan-400"></i>
+          <span>&gt; START_SIMULATION</span>
         </button>
       </div>
     </div>
 
-    <!-- 2. Simulation Mode Controls (Revealed after starting simulation) -->
+    <!-- 2. Simulation Mode Controls -->
     <div id="simulation-control-strip" class="hidden w-full flex items-center justify-between">
-      <!-- Left actions: Simulation triggers -->
+      <!-- Left actions: Terminal command buttons with cyan hover glow -->
       <div class="flex items-center space-x-2.5">
-        <!-- Warm matte amber Pause/Start simulation button -->
-        <button id="btn-start-simulation" class="px-4 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+        <button id="btn-start-simulation" class="px-4 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] font-mono text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
           <i id="sim-play-icon" class="fa-solid fa-play"></i>
-          <span id="sim-btn-text">Start Simulation</span>
+          <span id="sim-btn-text">&gt; START_SIM</span>
         </button>
 
-        <!-- Minimal border-only Step Forward button -->
-        <button id="btn-step-forward" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-forward-step text-zinc-400"></i>
-          <span>Step Forward</span>
+        <button id="btn-step-forward" class="px-3.5 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-cyan-900/50 hover:border-cyan-700 font-mono text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-xs">
+          <i class="fa-solid fa-forward-step text-cyan-500 text-xs"></i>
+          <span>&gt; STEP_FWD</span>
         </button>
       </div>
 
       <!-- Center Speed Slider -->
-      <div class="flex items-center gap-2.5 text-xs text-zinc-500 font-mono">
-        <span>Speed:</span>
+      <div class="flex items-center gap-2.5 text-xs text-slate-400 font-mono">
+        <span class="text-cyan-500">CYCLE_SPEED:</span>
         <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-24 cursor-pointer">
-        <span id="speed-label" class="text-zinc-500 w-10 text-right">0.9s</span>
+        <span id="speed-label" class="text-cyan-400 w-10 text-right font-bold">0.9s</span>
       </div>
 
       <!-- Right actions: Add Node & Break Link -->
       <div class="flex items-center space-x-2.5">
-        <button id="btn-add-node" class="px-3.5 py-2 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-plus text-zinc-300"></i>
-          <span>Add Node</span>
+        <button id="btn-add-node" class="px-3.5 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] font-mono text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-plus text-cyan-400"></i>
+          <span>&gt; ADD_NODE</span>
         </button>
 
-        <button id="btn-break-link" class="px-3.5 py-2 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-          <i class="fa-solid fa-xmark text-white"></i>
-          <span>Break Link</span>
+        <!-- Desaturated Neon-Red Break Link Button -->
+        <button id="btn-break-link" class="px-3.5 py-2 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 text-rose-400 border border-rose-800 hover:shadow-[0_0_10px_rgba(239,68,68,0.5)] font-mono text-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-scissors text-rose-400"></i>
+          <span>&gt; SEVER_LINK</span>
         </button>
       </div>
     </div>
@@ -302,147 +310,147 @@
   </footer>
 
   <!-- Modal 1: Initial Setup Modal (Shown on Load) -->
-  <div id="modal-initial-setup" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center">
-    <div class="bg-white w-full max-w-sm rounded-xl p-6 border border-zinc-200 shadow-xl">
-      <div class="flex items-center gap-3 pb-3 border-b border-zinc-100 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-zinc-100 text-[#1E293B] flex items-center justify-center text-sm shadow-xs">
+  <div id="modal-initial-setup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-slate-900 w-full max-w-sm rounded-xl p-6 border border-cyan-800/60 shadow-[0_0_30px_rgba(0,0,0,0.8)] font-mono">
+      <div class="flex items-center gap-3 pb-3 border-b border-cyan-900/40 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-700/80 text-cyan-400 flex items-center justify-center text-sm shadow-[0_0_10px_rgba(6,182,212,0.4)]">
           <i class="fa-solid fa-network-wired"></i>
         </div>
         <div>
-          <h3 class="font-semibold text-sm text-[#1E293B]">Setup Network Topology</h3>
-          <p class="text-[11px] text-zinc-500">Configure initial routers for simulation</p>
+          <h3 class="font-bold text-xs tracking-wider text-cyan-300 uppercase">&gt; TOPOLOGY_INIT</h3>
+          <p class="text-[11px] text-slate-400">Configure initial router mesh</p>
         </div>
       </div>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1.5">
-            Number of Initial Nodes <span class="text-zinc-400 font-normal">(Minimum 3)</span>
+          <label class="block text-xs font-medium text-slate-300 mb-1.5">
+            Number of Initial Nodes <span class="text-cyan-500 font-normal">(Minimum 3)</span>
           </label>
-          <input id="setup-node-count" type="number" min="3" max="12" value="4" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:border-[#1E293B] focus:ring-1 focus:ring-[#1E293B] font-mono">
-          <p class="text-[11px] text-zinc-400 mt-1">
-            Creates independent routing nodes (e.g. 4 nodes: A, B, C, D).
+          <input id="setup-node-count" type="number" min="3" max="12" value="4" class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg px-3 py-2 text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 focus:shadow-[0_0_8px_rgba(6,182,212,0.5)] font-mono">
+          <p class="text-[11px] text-slate-500 mt-1">
+            Generates virtual routing nodes on local UDP sockets (e.g. 4 nodes: A, B, C, D).
           </p>
         </div>
       </div>
 
-      <div class="flex justify-end gap-2.5 mt-6 pt-3 border-t border-zinc-100">
-        <button id="modal-setup-confirm" class="w-full py-2.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5">
-          <span>Generate Nodes</span>
-          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+      <div class="flex justify-end gap-2.5 mt-6 pt-3 border-t border-cyan-900/40">
+        <button id="modal-setup-confirm" class="w-full py-2.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] font-mono text-xs transition cursor-pointer flex items-center justify-center gap-2">
+          <span>&gt; GENERATE_NODES</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 2: Enter Link Cost Modal (When user clicks two nodes to connect them) -->
-  <div id="modal-link-cost" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+  <!-- Modal 2: Enter Link Cost Modal -->
+  <div id="modal-link-cost" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 w-full max-w-sm rounded-xl p-5 border border-cyan-800/60 shadow-[0_0_30px_rgba(0,0,0,0.8)] font-mono">
+      <div class="flex items-center justify-between pb-3 border-b border-cyan-900/40 mb-4">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded bg-zinc-100 text-[#1E293B] flex items-center justify-center text-xs">
+          <div class="w-6 h-6 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 flex items-center justify-center text-xs">
             <i class="fa-solid fa-link"></i>
           </div>
-          <h3 class="font-semibold text-sm text-[#1E293B]">Connect Nodes</h3>
+          <h3 class="font-bold text-xs text-cyan-300 uppercase">&gt; BRIDGE_LINK</h3>
         </div>
-        <button id="modal-link-cost-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+        <button id="modal-link-cost-close" class="text-slate-400 hover:text-cyan-400 transition cursor-pointer">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
       <div class="space-y-3.5">
-        <div class="bg-zinc-50 px-3 py-2 rounded-lg border border-zinc-100 text-xs text-zinc-600 flex items-center justify-between font-mono">
-          <span>Connection:</span>
-          <span class="font-bold text-[#1E293B]">
-            Node <span id="link-source-label"></span> ⟷ Node <span id="link-target-label"></span>
+        <div class="bg-slate-950 px-3 py-2 rounded-lg border border-cyan-900/50 text-xs text-slate-300 flex items-center justify-between">
+          <span class="text-slate-500">PATH:</span>
+          <span class="font-bold text-cyan-300">
+            NODE <span id="link-source-label"></span> &lt;---&gt; NODE <span id="link-target-label"></span>
           </span>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-zinc-700 mb-1">Enter Link Cost</label>
-          <input id="link-cost-input" type="number" min="1" max="99" value="2" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] focus:ring-1 focus:ring-[#1E293B] font-mono">
-          <p class="text-[11px] text-zinc-400 mt-1">Link metric / weight for Distance Vector shortest path calculation.</p>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Enter Link Cost</label>
+          <input id="link-cost-input" type="number" min="1" max="99" value="2" class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg px-3 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 focus:shadow-[0_0_8px_rgba(6,182,212,0.5)] font-mono">
+          <p class="text-[11px] text-slate-500 mt-1">Weight for Bellman-Ford shortest path matrix.</p>
         </div>
       </div>
 
-      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
-        <button id="modal-link-cost-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
-        <button id="modal-link-cost-confirm" class="px-3.5 py-1.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer">Connect Link</button>
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-cyan-900/40">
+        <button id="modal-link-cost-cancel" class="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">CANCEL</button>
+        <button id="modal-link-cost-confirm" class="px-3.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] text-xs transition cursor-pointer">&gt; COMMIT_LINK</button>
       </div>
     </div>
   </div>
 
   <!-- Modal 3: Add Node (Simulation Mode) -->
-  <div id="modal-add-node" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+  <div id="modal-add-node" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 w-full max-w-sm rounded-xl p-5 border border-cyan-800/60 shadow-[0_0_30px_rgba(0,0,0,0.8)] font-mono">
+      <div class="flex items-center justify-between pb-3 border-b border-cyan-900/40 mb-4">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded bg-zinc-100 text-[#1E293B] flex items-center justify-center text-xs">
+          <div class="w-6 h-6 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 flex items-center justify-center text-xs">
             <i class="fa-solid fa-plus"></i>
           </div>
-          <h3 class="font-semibold text-sm text-[#1E293B]">Add New Network Node</h3>
+          <h3 class="font-bold text-xs text-cyan-300 uppercase">&gt; SPAWN_NODE</h3>
         </div>
-        <button id="modal-add-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+        <button id="modal-add-close" class="text-slate-400 hover:text-cyan-400 transition cursor-pointer">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
       <div class="space-y-3.5">
         <div>
-          <label class="block text-xs font-medium text-zinc-600 mb-1">Node Identifier</label>
-          <input id="new-node-id" type="text" maxlength="3" placeholder="e.g. E" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] uppercase font-mono">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Node Identifier</label>
+          <input id="new-node-id" type="text" maxlength="3" placeholder="e.g. E" class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg px-3 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 uppercase font-mono">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-zinc-600 mb-1">Connect To Node</label>
-          <select id="new-node-target" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] font-mono">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Connect To Node</label>
+          <select id="new-node-target" class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg px-3 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 font-mono">
             <!-- Populated dynamically -->
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-zinc-600 mb-1">Link Cost</label>
-          <input id="new-node-cost" type="number" min="1" max="99" value="3" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] font-mono">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Link Cost</label>
+          <input id="new-node-cost" type="number" min="1" max="99" value="3" class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg px-3 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 font-mono">
         </div>
       </div>
 
-      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
-        <button id="modal-add-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
-        <button id="modal-add-confirm" class="px-3.5 py-1.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer">Add Node</button>
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-cyan-900/40">
+        <button id="modal-add-cancel" class="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">CANCEL</button>
+        <button id="modal-add-confirm" class="px-3.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 hover:shadow-[0_0_10px_rgba(6,182,212,0.5)] text-xs transition cursor-pointer">&gt; SPAWN</button>
       </div>
     </div>
   </div>
 
   <!-- Modal 4: Break Link (Simulation Mode) -->
-  <div id="modal-break-link" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
-      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+  <div id="modal-break-link" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 w-full max-w-sm rounded-xl p-5 border border-rose-800/60 shadow-[0_0_30px_rgba(0,0,0,0.8)] font-mono">
+      <div class="flex items-center justify-between pb-3 border-b border-rose-900/40 mb-4">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded bg-rose-50 text-[#991B1B] flex items-center justify-center text-xs">
+          <div class="w-6 h-6 rounded bg-rose-950 text-rose-400 border border-rose-800 flex items-center justify-center text-xs">
             <i class="fa-solid fa-scissors"></i>
           </div>
-          <h3 class="font-semibold text-sm text-[#1E293B]">Sever / Restore Link</h3>
+          <h3 class="font-bold text-xs text-rose-300 uppercase">&gt; TOGGLE_LINK_STATE</h3>
         </div>
-        <button id="modal-break-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+        <button id="modal-break-close" class="text-slate-400 hover:text-rose-400 transition cursor-pointer">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
       <div class="space-y-3.5">
         <div>
-          <label class="block text-xs font-medium text-zinc-600 mb-1">Select Link</label>
-          <select id="break-link-select" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#991B1B] font-mono">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Select Link</label>
+          <select id="break-link-select" class="w-full bg-slate-950 border border-rose-900/60 rounded-lg px-3 py-1.5 text-xs text-rose-300 focus:outline-none focus:border-rose-500 font-mono">
             <!-- Populated dynamically -->
           </select>
         </div>
-        <p class="text-[11px] text-zinc-500 leading-relaxed">
-          Severing sets cost to <span class="font-mono text-[#991B1B] font-semibold">∞</span>. Next step forward initiates distance vector convergence.
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Severing sets metric to <span class="font-mono text-rose-400 font-bold">∞</span>. Next cycle triggers distance vector convergence.
         </p>
       </div>
 
-      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
-        <button id="modal-break-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
-        <button id="modal-break-toggle" class="px-3.5 py-1.5 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs transition shadow-xs cursor-pointer">Toggle Link</button>
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-rose-900/40">
+        <button id="modal-break-cancel" class="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">CANCEL</button>
+        <button id="modal-break-toggle" class="px-3.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700 hover:shadow-[0_0_10px_rgba(239,68,68,0.5)] text-xs transition cursor-pointer">&gt; TOGGLE_STATE</button>
       </div>
     </div>
   </div>
@@ -450,11 +458,9 @@
   <!-- Distance Vector Simulator Logic -->
   <script>
     // --- Mode State ---
-    // 'setup': empty canvas, click two nodes to create links, tables hidden
-    // 'simulation': topology locked, tables revealed, simulation controls active
     let appMode = 'setup';
     let selectedNodeForLink = null;
-    let pendingLinkNodes = null; // { from, to }
+    let pendingLinkNodes = null;
 
     // --- Simulator State & Data ---
     const INF = 999;
@@ -468,16 +474,16 @@
     let nodesList = [];
     let edgesList = [];
 
-    // Routing Tables structure:
+    // Routing Tables structure
     let routingTables = {};
     let lastChanges = [];
 
-    // State Comparison Reference (acting like usePrevious hook / ref)
+    // State Comparison Reference
     let prevRoutingTables = null;
     let updatedRowKeys = new Set();
     let flashFadeTimer = null;
 
-    // Physical Packet Animation state
+    // Physical Packet Animation state (Cyan Neon Dots)
     let activePackets = [];
     let animationStartTime = null;
     let animationReqId = null;
@@ -595,25 +601,23 @@
       selectedNodeForLink = null;
       pendingLinkNodes = null;
 
-      // Ensure canvas is empty on load
       visNodes.clear();
       visEdges.clear();
       nodesList = [];
       edgesList = [];
 
-      // Hide routing tables panel
       document.getElementById('routing-tables-panel').classList.add('hidden');
       document.getElementById('setup-control-strip').classList.remove('hidden');
       document.getElementById('simulation-control-strip').classList.add('hidden');
       document.getElementById('btn-start-simulation-setup').classList.add('hidden');
 
-      document.getElementById('mode-text').textContent = 'Setup';
-      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]';
+      document.getElementById('mode-text').textContent = 'SETUP';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-cyan-400';
 
       document.getElementById('setup-canvas-hints').classList.remove('hidden');
       document.getElementById('sim-canvas-hints').classList.add('hidden');
 
-      setLogMessage('Setup Mode: Please enter the number of initial nodes in the modal.');
+      setLogMessage('Setup Mode: Please specify the initial node count in the setup modal.');
       document.getElementById('modal-initial-setup').classList.remove('hidden');
     }
 
@@ -637,13 +641,12 @@
       visNodes.clear();
       visEdges.clear();
 
-      // Arrange nodes in a neat circle
       const radius = Math.min(220, 45 * count);
       const initialNodesData = nodesList.map((id, index) => {
         const angle = (2 * Math.PI * index) / count - Math.PI / 2;
         const x = Math.round(radius * Math.cos(angle));
         const y = Math.round(radius * Math.sin(angle));
-        const nodeObj = formatNodeStyle({ id, label: `Node ${id}` });
+        const nodeObj = formatNodeStyle({ id, label: `NODE_${id}` });
         nodeObj.x = x;
         nodeObj.y = y;
         return nodeObj;
@@ -654,7 +657,7 @@
       document.getElementById('modal-initial-setup').classList.add('hidden');
       updateSetupProgressUI();
 
-      setLogMessage(`Setup Mode: ${count} nodes created. Click on any two nodes to create a link.`);
+      setLogMessage(`NOC Console: Generated ${count} virtual router nodes. Click two nodes to establish link.`);
       network.fit({ animation: { duration: 500 } });
     }
 
@@ -675,15 +678,14 @@
       const startSimBtn = document.getElementById('btn-start-simulation-setup');
 
       if (connectedCount >= 3) {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-        text.textContent = `Connected: ${connectedCount} nodes (Ready to simulate!)`;
-        hint.textContent = `Ready! At least 3 nodes are connected. Click 'Start Simulation' to lock topology.`;
-        // Reveal 'Start Simulation' button once at least 3 nodes are connected
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]';
+        text.textContent = `CONNECTED: ${connectedCount} NODES (READY TO INITIALIZE MATRIX)`;
+        hint.textContent = `Ready! ${connectedCount} nodes linked. Click 'START_SIMULATION' to lock topology.`;
         startSimBtn.classList.remove('hidden');
       } else {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
-        text.textContent = `Connected: ${connectedCount} / 3 nodes (Minimum 3 needed)`;
-        hint.textContent = `Click two nodes to create a link. Connect at least 3 nodes to begin (${connectedCount}/3).`;
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]';
+        text.textContent = `CONNECTED: ${connectedCount} / 3 (MIN 3 REQUIRED)`;
+        hint.textContent = `Click 2 nodes to add link. Connect at least 3 nodes to begin (${connectedCount}/3).`;
         startSimBtn.classList.add('hidden');
       }
     }
@@ -713,7 +715,7 @@
       visEdges.add(formatEdgeStyle(newEdge, edgeIndex));
 
       document.getElementById('modal-link-cost').classList.add('hidden');
-      setLogMessage(`Created link between Node ${newEdge.from} ⟷ Node ${newEdge.to} with Cost ${newEdge.cost}.`);
+      setLogMessage(`Bridged link between Node ${newEdge.from} <---> Node ${newEdge.to} (Metric: ${newEdge.cost}).`);
 
       pendingLinkNodes = null;
       updateSetupProgressUI();
@@ -737,8 +739,8 @@
       document.getElementById('simulation-control-strip').classList.remove('hidden');
 
       // 3. Update status badges
-      document.getElementById('mode-text').textContent = 'Simulation';
-      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-mono text-emerald-800';
+      document.getElementById('mode-text').textContent = 'SIMULATION';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-500/40 text-[11px] font-mono text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.2)]';
 
       document.getElementById('setup-canvas-hints').classList.add('hidden');
       document.getElementById('sim-canvas-hints').classList.remove('hidden');
@@ -775,17 +777,17 @@
         nodes: {
           shape: 'circle',
           font: {
-            color: '#1E293B',
+            color: '#06b6d4',
             size: 12,
-            face: 'Inter, sans-serif'
+            face: 'JetBrains Mono, monospace'
           },
-          borderWidth: 1.5,
+          borderWidth: 2,
           shadow: {
             enabled: true,
-            color: 'rgba(0, 0, 0, 0.04)',
-            size: 6,
+            color: 'rgba(6, 182, 212, 0.4)',
+            size: 10,
             x: 0,
-            y: 1
+            y: 0
           }
         },
         edges: {
@@ -793,18 +795,18 @@
             to: { enabled: true, scaleFactor: 0.55 }
           },
           font: {
-            color: '#475569',
+            color: '#38bdf8',
             size: 11,
             face: 'JetBrains Mono, monospace',
             align: 'middle',
-            background: '#FFFFFF',
+            background: '#020617',
             strokeWidth: 2,
-            strokeColor: '#FFFFFF'
+            strokeColor: '#020617'
           },
           color: {
-            color: '#475569',
-            highlight: '#1E293B',
-            hover: '#1E293B'
+            color: '#06b6d4',
+            highlight: '#38bdf8',
+            hover: '#38bdf8'
           },
           smooth: {
             type: 'continuous',
@@ -839,7 +841,7 @@
 
       network = new vis.Network(container, data, options);
 
-      // Physical Packet Animation renderer on Vis.js canvas
+      // Physical Packet Animation renderer on Vis.js canvas (Cyan Neon Packets)
       network.on("afterDrawing", (ctx) => {
         if (!activePackets || activePackets.length === 0) return;
         const nodePositions = network.getPositions();
@@ -863,14 +865,14 @@
           ctx.save();
           // Halo glow
           ctx.beginPath();
-          ctx.arc(px, py, 6.5, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+          ctx.arc(px, py, 7, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
           ctx.fill();
 
           // Packet core dot
           ctx.beginPath();
           ctx.arc(px, py, 4, 0, Math.PI * 2);
-          ctx.fillStyle = '#059669';
+          ctx.fillStyle = '#06b6d4';
           ctx.fill();
           ctx.lineWidth = 1.5;
           ctx.strokeStyle = '#FFFFFF';
@@ -881,57 +883,50 @@
 
       // Node and Edge click handling
       network.on('click', (params) => {
-        // --- A. Setup Mode: Click two nodes to connect ---
         if (appMode === 'setup') {
           if (params.nodes.length > 0) {
             const clickedNodeId = params.nodes[0];
 
             if (!selectedNodeForLink) {
-              // Clicked first node
               selectedNodeForLink = clickedNodeId;
               visNodes.update({
                 id: clickedNodeId,
-                color: { background: '#FEF3C7', border: '#D97706' }
+                color: { background: '#082f49', border: '#38bdf8' },
+                shadow: { color: 'rgba(56, 189, 248, 0.8)', size: 16 }
               });
-              setLogMessage(`Selected Node ${clickedNodeId}. Click a second node to connect.`);
+              setLogMessage(`Selected Node ${clickedNodeId}. Click second node to link.`);
             } else if (selectedNodeForLink === clickedNodeId) {
-              // Clicked same node again: deselect
               visNodes.update(formatNodeStyle({ id: clickedNodeId }));
               selectedNodeForLink = null;
               setLogMessage(`Deselected Node ${clickedNodeId}.`);
             } else {
-              // Clicked second node: connect them!
               const sourceNode = selectedNodeForLink;
               const targetNode = clickedNodeId;
 
               visNodes.update(formatNodeStyle({ id: sourceNode }));
               selectedNodeForLink = null;
 
-              // Check if link already exists
               const existingLink = edgesList.find(e => 
                 (e.from === sourceNode && e.to === targetNode) || (e.from === targetNode && e.to === sourceNode)
               );
 
               if (existingLink) {
-                setLogMessage(`Link between Node ${sourceNode} ⟷ Node ${targetNode} already exists!`);
+                setLogMessage(`Link between Node ${sourceNode} <---> Node ${targetNode} already exists!`);
                 return;
               }
 
-              // Open modal prompting for link cost
               openLinkCostModal(sourceNode, targetNode);
             }
           } else {
-            // Clicked empty canvas: clear selection
             if (selectedNodeForLink) {
               visNodes.update(formatNodeStyle({ id: selectedNodeForLink }));
               selectedNodeForLink = null;
-              setLogMessage('Deselected node. Click any node to connect.');
+              setLogMessage('Deselected node.');
             }
           }
           return;
         }
 
-        // --- B. Simulation Mode: Click edge to select for Break Link ---
         if (appMode === 'simulation') {
           if (params.edges.length > 0 && params.nodes.length === 0) {
             const edgeId = params.edges[0];
@@ -953,7 +948,7 @@
       if (edgeObj) {
         selectedEdge = { source: edgeObj.from, target: edgeObj.to, id: edgeId, broken: edgeObj.broken };
         updateBreakLinkButtonUI();
-        setLogMessage(`Selected Link ${edgeObj.from} ⟷ ${edgeObj.to} (Cost: ${edgeObj.broken ? '∞' : edgeObj.cost}). Press 'Break Link' to toggle.`);
+        setLogMessage(`Selected Link ${edgeObj.from} <---> ${edgeObj.to} (Metric: ${edgeObj.broken ? '∞' : edgeObj.cost}). Press 'SEVER_LINK' to toggle.`);
       }
     }
 
@@ -962,41 +957,42 @@
       if (!btn) return;
 
       if (selectedEdge) {
-        const actionLabel = selectedEdge.broken ? 'Restore Link' : 'Break Link';
-        btn.innerHTML = `<i class="fa-solid fa-scissors text-white"></i> <span>${actionLabel} (${selectedEdge.source} ⟷ ${selectedEdge.target})</span>`;
+        const actionLabel = selectedEdge.broken ? 'RESTORE_LINK' : 'SEVER_LINK';
+        btn.innerHTML = `<i class="fa-solid fa-scissors text-rose-400"></i> <span>&gt; ${actionLabel} (${selectedEdge.source}<->${selectedEdge.target})</span>`;
       } else {
-        btn.innerHTML = `<i class="fa-solid fa-xmark text-white"></i> <span>Break Link</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-scissors text-rose-400"></i> <span>&gt; SEVER_LINK</span>`;
       }
     }
 
+    // Vis.js Node styling: Hollow dark circle with bright cyan borders and text (#06b6d4)
     function formatNodeStyle(node) {
       return {
         id: node.id,
-        label: node.label || `Node ${node.id}`,
+        label: node.label || `NODE_${node.id}`,
         color: {
-          background: '#FFFFFF',
-          border: '#1E293B',
+          background: '#020617', // Hollow dark
+          border: '#06b6d4',     // Bright cyan border
           highlight: {
-            background: '#F8FAFC',
-            border: '#0F172A'
+            background: '#082f49',
+            border: '#38bdf8'
           },
           hover: {
-            background: '#F1F5F9',
-            border: '#0F172A'
+            background: '#071b30',
+            border: '#22d3ee'
           }
         },
-        borderWidth: 1.5,
+        borderWidth: 2,
         shadow: {
           enabled: true,
-          color: 'rgba(0, 0, 0, 0.05)',
-          size: 6,
+          color: 'rgba(6, 182, 212, 0.45)',
+          size: 10,
           x: 0,
-          y: 1
+          y: 0
         },
         font: {
-          color: '#1E293B',
+          color: '#06b6d4',      // Bright cyan text
           size: 12,
-          face: 'Inter, sans-serif',
+          face: 'JetBrains Mono, monospace',
           strokeWidth: 0,
           bold: true
         },
@@ -1005,6 +1001,7 @@
       };
     }
 
+    // Vis.js Edge styling: Thin cyan lines (#06b6d4), dashed neon-red lines (#ef4444) when broken
     function formatEdgeStyle(edge, id) {
       const edgeId = id !== undefined ? id : `${edge.from}-${edge.to}`;
       const isBroken = edge.broken;
@@ -1012,31 +1009,35 @@
         id: edgeId,
         from: edge.from,
         to: edge.to,
-        label: isBroken ? 'Cost: ∞' : `Cost: ${edge.cost}`,
+        label: isBroken ? 'METRIC: ∞' : `METRIC: ${edge.cost}`,
         font: {
-          color: isBroken ? '#991B1B' : '#475569',
+          color: isBroken ? '#ef4444' : '#38bdf8',
           size: 11,
           face: 'JetBrains Mono, monospace',
           align: 'middle',
-          background: '#FFFFFF',
+          background: '#020617',
           strokeWidth: 2,
-          strokeColor: '#FFFFFF'
+          strokeColor: '#020617'
         },
         color: {
-          color: isBroken ? '#991B1B' : '#475569',
-          highlight: isBroken ? '#991B1B' : '#1E293B',
-          hover: isBroken ? '#991B1B' : '#1E293B'
+          color: isBroken ? '#ef4444' : '#06b6d4', // Neon red vs Cyan
+          highlight: isBroken ? '#f87171' : '#38bdf8',
+          hover: isBroken ? '#f87171' : '#38bdf8'
         },
-        dashes: isBroken ? [5, 5] : false,
+        dashes: isBroken ? [6, 6] : false, // Dashed when broken
         width: 1.5,
         shadow: {
-          enabled: false
+          enabled: true,
+          color: isBroken ? 'rgba(239, 68, 68, 0.4)' : 'rgba(6, 182, 212, 0.25)',
+          size: 6,
+          x: 0,
+          y: 0
         }
       };
     }
 
     // ==========================================
-    // 3. Routing Tables & Algorithm
+    // 3. Routing Tables & Algorithm (Terminal Matrix)
     // ==========================================
     function initRoutingTables() {
       stepCount = 0;
@@ -1062,7 +1063,7 @@
 
       prevRoutingTables = deepCloneTables(routingTables);
       updatedRowKeys.clear();
-      setConvergenceStatus(true, "Converged");
+      setConvergenceStatus(true, "CONVERGED");
     }
 
     function getDirectLink(u, v) {
@@ -1087,56 +1088,58 @@
       if (!container) return;
 
       container.innerHTML = '';
-      document.getElementById('node-count-badge').textContent = `${nodesList.length} Nodes`;
+      document.getElementById('node-count-badge').textContent = `[ ${nodesList.length} NODES ]`;
 
       nodesList.forEach(nodeId => {
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-lg p-3 border border-zinc-200 shadow-xs transition-all';
+        card.className = 'bg-slate-950 rounded-lg p-3 border border-cyan-900/30 shadow-sm transition-all font-mono';
 
-        // Inner Card Header: [A] Router A Table
+        // Inner Card Header: [NODE_A] Distance Matrix
         const header = document.createElement('div');
-        header.className = 'flex items-center justify-between pb-2 mb-2 border-b border-zinc-100';
+        header.className = 'flex items-center justify-between pb-2 mb-2 border-b border-cyan-900/30';
         header.innerHTML = `
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded bg-zinc-100 text-zinc-700 font-semibold font-mono text-xs flex items-center justify-center border border-zinc-200">
+            <span class="w-5 h-5 rounded bg-cyan-950 text-cyan-400 font-bold font-mono text-[11px] flex items-center justify-center border border-cyan-800">
               ${nodeId}
             </span>
-            <span class="font-medium text-xs text-[#1E293B]">Router ${nodeId} Table</span>
+            <span class="font-bold text-xs text-cyan-300">ROUTER_${nodeId}::TABLE</span>
           </div>
-          <span class="text-[10px] text-zinc-400 font-mono">D<sub>${nodeId}</sub></span>
+          <span class="text-[10px] text-cyan-600 font-mono">D<sub>${nodeId}</sub></span>
         `;
         card.appendChild(header);
 
-        // Tabular data with light-gray header background
+        // Tabular data with high-contrast light slate text & monospace
         const table = document.createElement('table');
         table.className = 'w-full text-left text-xs font-mono';
         table.innerHTML = `
           <thead>
-            <tr class="text-[11px] text-zinc-500 bg-zinc-50/80 border-b border-zinc-100">
-              <th class="py-1 px-2 font-medium">Destination</th>
-              <th class="py-1 px-2 font-medium">Next Hop</th>
-              <th class="py-1 px-2 font-medium text-right">Cost</th>
+            <tr class="text-[11px] text-cyan-500/80 bg-slate-900/90 border-b border-cyan-900/40">
+              <th class="py-1 px-2 font-medium">DEST</th>
+              <th class="py-1 px-2 font-medium">NEXT_HOP</th>
+              <th class="py-1 px-2 font-medium text-right">COST</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-zinc-100 text-[11px]">
+          <tbody class="divide-y divide-slate-900 text-[11px]">
             ${nodesList.map(destId => {
               const rowKey = `${nodeId}-${destId}`;
               const isUpdated = updatedRowKeys.has(rowKey);
               const rowData = routingTables[nodeId] ? routingTables[nodeId][destId] : { cost: INF, nextHop: '—', changed: false };
-              const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-[#991B1B] font-semibold">∞</span>' : (rowData ? rowData.cost : '—');
+              const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-rose-400 font-bold">∞</span>' : (rowData ? rowData.cost : '—');
               const nextHopVal = rowData ? (rowData.nextHop || rowData.next_hop || '—') : '—';
               const nextHopDisplay = nextHopVal === '—' 
-                ? (isUpdated ? '<span class="text-emerald-300/80">—</span>' : '<span class="text-zinc-400">—</span>') 
-                : (isUpdated ? `<span class="text-emerald-200 font-medium">${nextHopVal}</span>` : `<span class="text-zinc-700 font-medium">${nextHopVal}</span>`);
+                ? (isUpdated ? '<span class="text-emerald-300/80">—</span>' : '<span class="text-slate-600">—</span>') 
+                : (isUpdated ? `<span class="text-emerald-200 font-medium">${nextHopVal}</span>` : `<span class="text-cyan-400 font-medium">${nextHopVal}</span>`);
+              
+              // Persisting bg-emerald-900/50 flash highlight on changed row
               const highlightClasses = isUpdated 
-                ? 'bg-emerald-900/50 text-white font-medium' 
-                : 'bg-transparent text-zinc-700';
+                ? 'bg-emerald-900/50 text-white font-medium shadow-[0_0_8px_rgba(6,78,59,0.5)]' 
+                : 'bg-transparent text-slate-200';
               
               return `
                 <tr id="row-${rowKey}" class="transition-colors duration-500 ${highlightClasses}">
-                  <td class="py-1.5 px-2 ${isUpdated ? 'text-white' : 'text-[#1E293B]'} font-medium">${destId}</td>
+                  <td class="py-1.5 px-2 ${isUpdated ? 'text-white' : 'text-slate-200'} font-bold">${destId}</td>
                   <td class="py-1.5 px-2">${nextHopDisplay}</td>
-                  <td class="py-1.5 px-2 text-right font-medium ${isUpdated ? 'text-emerald-200' : 'text-zinc-800'}">${costDisplay}</td>
+                  <td class="py-1.5 px-2 text-right font-medium ${isUpdated ? 'text-emerald-200' : 'text-slate-200'}">${costDisplay}</td>
                 </tr>
               `;
             }).join('')}
@@ -1153,12 +1156,12 @@
       const textEl = document.getElementById('convergence-text');
       const badgeEl = document.getElementById('convergence-badge');
 
-      textEl.textContent = text;
+      textEl.textContent = text.toUpperCase();
       if (converged) {
-        statusEl.className = 'flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-medium text-emerald-800';
+        statusEl.className = 'flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-emerald-400';
         badgeEl.classList.remove('hidden');
       } else {
-        statusEl.className = 'flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 text-xs font-medium text-amber-800';
+        statusEl.className = 'flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-md border border-cyan-900/40 text-[11px] font-mono text-cyan-300';
         badgeEl.classList.add('hidden');
       }
     }
@@ -1175,14 +1178,14 @@
     // 4. WebSocket & Server Synchronization
     // ==========================================
     function initWebSocket() {
-      updateBackendStatus(false, 'Connecting...');
+      updateBackendStatus(false, 'LINK: CONNECTING...');
 
       try {
         ws = new WebSocket(WS_URL);
 
         ws.onopen = () => {
           isBackendConnected = true;
-          updateBackendStatus(true, 'Connected');
+          updateBackendStatus(true, 'LINK: ONLINE');
           if (reconnectTimer) {
             clearTimeout(reconnectTimer);
             reconnectTimer = null;
@@ -1193,7 +1196,6 @@
           try {
             const data = JSON.parse(event.data);
             if (data && data.type === 'state_update') {
-              // Only apply backend simulation updates when actively in simulation mode
               if (appMode === 'simulation') {
                 handleBackendStateUpdate(data);
               }
@@ -1205,17 +1207,17 @@
 
         ws.onclose = () => {
           isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected');
+          updateBackendStatus(false, 'LINK: OFFLINE');
           scheduleReconnect();
         };
 
         ws.onerror = () => {
           isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected');
+          updateBackendStatus(false, 'LINK: ERROR');
         };
       } catch (e) {
         isBackendConnected = false;
-        updateBackendStatus(false, 'Disconnected');
+        updateBackendStatus(false, 'LINK: OFFLINE');
         scheduleReconnect();
       }
     }
@@ -1236,11 +1238,11 @@
 
       label.textContent = text;
       if (connected) {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-        label.className = 'text-xs text-zinc-800 font-mono';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]';
+        label.className = 'text-[11px] text-slate-300 font-mono';
       } else {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
-        label.className = 'text-xs text-zinc-500 font-mono';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_#ef4444]';
+        label.className = 'text-[11px] text-rose-400 font-mono';
       }
     }
 
@@ -1257,9 +1259,9 @@
       updateStepUI(stepCount);
 
       if (data.converged) {
-        setConvergenceStatus(true, "Converged");
+        setConvergenceStatus(true, "CONVERGED");
       } else {
-        setConvergenceStatus(false, data.running ? "Propagating" : "Paused");
+        setConvergenceStatus(false, data.running ? "PROPAGATING" : "PAUSED");
       }
       updatePlayButtonUI(data.running);
 
@@ -1281,7 +1283,7 @@
       }
 
       if (data.routing_tables) {
-        processRoutingTableUpdate(data.routing_tables, !!data.running);
+        processRoutingTableUpdate(data.routing_tables);
       }
     }
 
@@ -1291,16 +1293,16 @@
       const btnIcon = document.getElementById('sim-play-icon');
 
       if (isRunning) {
-        btnText.textContent = 'Pause Simulation';
+        btnText.textContent = '> PAUSE_SIM';
         btnIcon.className = 'fa-solid fa-pause';
       } else {
-        btnText.textContent = 'Start Simulation';
+        btnText.textContent = '> START_SIM';
         btnIcon.className = 'fa-solid fa-play';
       }
     }
 
     // ==========================================
-    // 5. Simulation Actions & Step Forward
+    // 5. Simulation Actions & Step Forward (1.5s Packet Animation)
     // ==========================================
     function toggleSimulation() {
       if (isBackendConnected) {
@@ -1308,7 +1310,6 @@
         return;
       }
 
-      // Standalone client fallback
       isRunning = !isRunning;
       updatePlayButtonUI(isRunning);
 
@@ -1331,10 +1332,10 @@
     }
 
     function stepForwardDistanceVector() {
-      if (isStepAnimating) return; // Ignore clicks while packets are in flight
+      if (isStepAnimating) return; // Prevent clicks while packets are in transit
       isStepAnimating = true;
 
-      // 1. Trigger Vis.js animation that spawns packets along active links
+      // 1. Vis.js physical packet animation along all active links
       activePackets = [];
       edgesList.forEach(e => {
         if (!e.broken) {
@@ -1346,7 +1347,7 @@
       if (activePackets.length > 0) {
         animationStartTime = null;
         requestAnimationFrame(animatePackets);
-        setLogMessage('Transmitting distance vector packets along active links (1.5s)...');
+        setLogMessage('NOC Alert: Broadcasting distance vector packets across active links (1.5s)...');
       }
 
       const stepBtn = document.getElementById('btn-step-forward');
@@ -1354,7 +1355,7 @@
         stepBtn.classList.add('opacity-50', 'pointer-events-none');
       }
 
-      // 2. 1.5 Second timeout: only after packet animation finishes, update router tables!
+      // 2. SetTimeout of 1.5s: Update tables only when packets reach destination node!
       setTimeout(() => {
         isStepAnimating = false;
         if (stepBtn) {
@@ -1366,7 +1367,7 @@
           return;
         }
 
-        // Standalone client fallback calculation
+        // Standalone calculation
         stepCount++;
         updateStepUI(stepCount);
 
@@ -1424,14 +1425,14 @@
         processRoutingTableUpdate(routingTables);
 
         if (anyChange) {
-          setConvergenceStatus(false, "Propagating");
+          setConvergenceStatus(false, "PROPAGATING");
           const sampleLog = lastChanges.slice(0, 2).map(c => 
-            `${c.node}→${c.dest}: cost ${c.oldCost === INF ? '∞' : c.oldCost}➔${c.newCost === INF ? '∞' : c.newCost} (via ${c.nextHop})`
+            `${c.node}->${c.dest}: ${c.oldCost === INF ? '∞' : c.oldCost}=>${c.newCost === INF ? '∞' : c.newCost} (via ${c.nextHop})`
           ).join('; ');
-          setLogMessage(`Step ${stepCount}: Packets arrived! Updated routes [${sampleLog}${lastChanges.length > 2 ? ' ...' : ''}]`);
+          setLogMessage(`Cycle ${stepCount}: Packets received! Updated routes [${sampleLog}${lastChanges.length > 2 ? ' ...' : ''}]`);
         } else {
-          setConvergenceStatus(true, "Converged");
-          setLogMessage(`Step ${stepCount}: Packets arrived. No routing table changes. Network converged!`);
+          setConvergenceStatus(true, "CONVERGED");
+          setLogMessage(`Cycle ${stepCount}: Packets received. No distance vector changes. Matrix stable!`);
           if (isRunning) {
             toggleSimulation();
           }
@@ -1449,7 +1450,7 @@
 
         if (isBackendConnected) {
           sendBackendAction(payload);
-          setLogMessage(`Sent Break Link action for ${selectedEdge.source} ⟷ ${selectedEdge.target}.`);
+          setLogMessage(`Sent Break Link action for ${selectedEdge.source} <-> ${selectedEdge.target}.`);
         } else {
           toggleLinkStateById(selectedEdge.id);
         }
@@ -1488,9 +1489,9 @@
         const edgeIndex = edgesList.indexOf(edgeObj);
         visEdges.update(formatEdgeStyle(edgeObj, edgeIndex));
 
-        const stateText = edgeObj.broken ? 'severed (cost = ∞)' : `restored (cost = ${edgeObj.cost})`;
-        setLogMessage(`Link ${edgeObj.from} ⟷ ${edgeObj.to} ${stateText}.`);
-        setConvergenceStatus(false, "Modified");
+        const stateText = edgeObj.broken ? 'severed (metric = ∞)' : `restored (metric = ${edgeObj.cost})`;
+        setLogMessage(`Link ${edgeObj.from} <---> ${edgeObj.to} ${stateText}.`);
+        setConvergenceStatus(false, "MODIFIED");
         stepForwardDistanceVector();
       }
     }
@@ -1502,7 +1503,7 @@
       nodesList.forEach(id => {
         const opt = document.createElement('option');
         opt.value = id;
-        opt.textContent = `Node ${id}`;
+        opt.textContent = `NODE_${id}`;
         targetSelect.appendChild(opt);
       });
 
@@ -1544,7 +1545,7 @@
       }
 
       nodesList.push(nodeId);
-      visNodes.add(formatNodeStyle({ id: nodeId, label: `Node ${nodeId}` }));
+      visNodes.add(formatNodeStyle({ id: nodeId, label: `NODE_${nodeId}` }));
 
       const newEdge = { from: nodeId, to: targetId, cost: cost, broken: false };
       edgesList.push(newEdge);
@@ -1571,8 +1572,8 @@
         }
       });
 
-      setConvergenceStatus(false, "Added Node");
-      setLogMessage(`Node ${nodeId} connected to Node ${targetId} with cost ${cost}.`);
+      setConvergenceStatus(false, "ADDED_NODE");
+      setLogMessage(`Spawned Node ${nodeId} connected to Node ${targetId} with metric ${cost}.`);
       renderAllRoutingTables();
 
       document.getElementById('modal-add-node').classList.add('hidden');
@@ -1587,7 +1588,7 @@
         const opt = document.createElement('option');
         opt.value = idx;
         const status = e.broken ? '[SEVERED]' : `[Cost: ${e.cost}]`;
-        opt.textContent = `Link ${e.from} ⟷ ${e.to}  ${status}`;
+        opt.textContent = `LINK_${e.from} <---> LINK_${e.to}  ${status}`;
         if (selectedEdge && ((selectedEdge.source === e.from && selectedEdge.target === e.to) || (selectedEdge.source === e.to && selectedEdge.target === e.from))) {
           opt.selected = true;
         }
@@ -1615,7 +1616,7 @@
     // 6. Event Listeners Setup
     // ==========================================
     function setupEventListeners() {
-      // Initial Setup modal
+      // Setup modal
       document.getElementById('modal-setup-confirm').addEventListener('click', confirmGenerateNodes);
       document.getElementById('btn-reconfigure-nodes').addEventListener('click', openInitialSetupModal);
       document.getElementById('btn-reset-topology').addEventListener('click', openInitialSetupModal);
@@ -1631,7 +1632,7 @@
         pendingLinkNodes = null;
       });
 
-      // Switch to simulation button
+      // Switch to simulation
       document.getElementById('btn-start-simulation-setup').addEventListener('click', switchToSimulationMode);
 
       // Simulation mode controls
@@ -1661,7 +1662,7 @@
       physicsBtn.addEventListener('click', () => {
         physicsEnabled = !physicsEnabled;
         network.setOptions({ physics: { enabled: physicsEnabled } });
-        document.getElementById('physics-btn-text').textContent = `Physics: ${physicsEnabled ? 'ON' : 'OFF'}`;
+        document.getElementById('physics-btn-text').textContent = `PHYSICS: ${physicsEnabled ? 'ON' : 'OFF'}`;
       });
 
       // Modal add node controls
