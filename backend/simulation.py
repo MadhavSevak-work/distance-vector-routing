@@ -95,6 +95,42 @@ class SimulationController:
 
         self._notify_state_update()
 
+    def set_custom_topology(self, nodes: List[str], edges: List[Dict[str, Any]]):
+        """Initializes custom user-defined topology."""
+        self.stop_routers()
+        with self._lock:
+            self.routers.clear()
+            self.edges.clear()
+            self._history_stack.clear()
+            self.step_count = 0
+            self.converged = False
+            self.latest_logs = [f"Initialized custom topology with {len(nodes)} nodes and {len(edges)} links."]
+
+            base_port = 5001
+            for i, node_id in enumerate(nodes):
+                port = base_port + i
+                router = Router(
+                    node_id=node_id.upper(),
+                    port=port,
+                    on_table_changed=self._handle_table_changed,
+                    on_state_updated=self._notify_state_update
+                )
+                self.routers[node_id.upper()] = router
+
+            for edge in edges:
+                u = edge["from"].upper()
+                v = edge["to"].upper()
+                cost = int(edge.get("cost", 1))
+                if u in self.routers and v in self.routers:
+                    self.routers[u].set_neighbor(v, self.routers[v].port, cost)
+                    self.routers[v].set_neighbor(u, self.routers[u].port, cost)
+                    self.edges.append({"from": u, "to": v, "cost": cost, "broken": False})
+
+        for router in self.routers.values():
+            router.start()
+
+        self._notify_state_update()
+
     def _handle_table_changed(self, router: Router, dest: str, old_cost: int, new_cost: int, next_hop: str):
         log_entry = (
             f"Router {router.node_id}: Route to {dest} changed: "

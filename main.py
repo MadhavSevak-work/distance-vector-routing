@@ -140,6 +140,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 cost = int(msg.get("cost", 3))
                 if node_id and target:
                     sim_controller.add_node(node_id, target, cost)
+            elif action == "set_topology":
+                nodes = msg.get("nodes", [])
+                edges = msg.get("edges", [])
+                sim_controller.set_custom_topology(nodes, edges)
             elif action == "reset":
                 sim_controller.initialize_default_topology()
             elif action == "get_state":

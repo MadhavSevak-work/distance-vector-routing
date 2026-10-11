@@ -106,6 +106,12 @@
 
     <!-- Right status pill tags -->
     <div class="flex items-center space-x-2.5">
+      <!-- Mode badge -->
+      <div id="mode-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
+        <span class="text-xs text-zinc-500">Mode:</span>
+        <span id="mode-text" class="font-semibold text-zinc-800">Setup</span>
+      </div>
+
       <!-- Backend connection indicator -->
       <div id="backend-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" id="backend-dot"></span>
@@ -115,19 +121,19 @@
       <!-- Convergence Status capsule -->
       <div id="convergence-status" class="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-medium text-emerald-800">
         <span class="text-xs text-zinc-500">Status:</span>
-        <span id="convergence-text">Converged</span>
+        <span id="convergence-text">Ready</span>
       </div>
 
       <!-- Step Counter capsule -->
-      <div class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
+      <div id="step-badge" class="flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]">
         <span class="text-xs text-zinc-500">Step:</span>
         <span id="step-counter" class="font-semibold text-zinc-800">0</span>
       </div>
 
-      <!-- Reset Loop button -->
-      <button id="btn-reset-topology" title="Reset Network to initial loop" class="px-2.5 py-1 rounded-md bg-white hover:bg-zinc-50 text-zinc-700 text-xs border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+      <!-- Reset / New Setup button -->
+      <button id="btn-reset-topology" title="Reconfigure or reset network topology" class="px-2.5 py-1 rounded-md bg-white hover:bg-zinc-50 text-zinc-700 text-xs border border-zinc-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
         <i class="fa-solid fa-rotate-left text-zinc-500"></i>
-        <span>Reset Loop</span>
+        <span>New Setup</span>
       </button>
     </div>
   </header>
@@ -142,11 +148,25 @@
       <div id="network-container" class="relative w-full h-full bg-white">
         <div id="network-canvas"></div>
 
-        <!-- Upper-Left Badges -->
-        <div class="absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
+        <!-- Upper-Left Badges in Setup Mode -->
+        <div id="setup-canvas-hints" class="absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
+          <div class="bg-white/95 px-2.5 py-1 rounded-md text-xs text-zinc-600 flex items-center gap-1.5 border border-zinc-200 shadow-xs">
+            <i class="fa-solid fa-hand-pointer text-amber-600 text-xs"></i>
+            <span>Setup Mode: <strong class="text-zinc-800">Click two nodes</strong> to create a link</span>
+          </div>
+          <div class="bg-white/95 px-2.5 py-1 rounded-md text-[11px] text-zinc-500 flex items-center gap-2 border border-zinc-200 shadow-xs">
+            <span class="flex items-center gap-1">
+              <span id="setup-progress-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span id="setup-progress-text">Connected: 0 / 3 nodes (Minimum 3 needed)</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Upper-Left Badges in Simulation Mode (Hidden initially) -->
+        <div id="sim-canvas-hints" class="hidden absolute top-3.5 left-4 pointer-events-none flex flex-col gap-2 z-10">
           <div class="bg-white/95 px-2.5 py-1 rounded-md text-xs text-zinc-600 flex items-center gap-1.5 border border-zinc-200 shadow-xs">
             <i class="fa-solid fa-arrows-up-down-left-right text-zinc-400 text-[10px]"></i>
-            <span>Drag nodes to configure</span>
+            <span>Topology Locked: Drag nodes to rearrange view</span>
           </div>
           <div class="bg-white/95 px-2.5 py-1 rounded-md text-[11px] text-zinc-500 flex items-center gap-2 border border-zinc-200 shadow-xs">
             <span class="flex items-center gap-1">
@@ -175,7 +195,7 @@
           <div class="bg-white/95 rounded-lg px-3.5 py-2 text-xs border border-zinc-200 shadow-xs flex items-center justify-between">
             <div class="flex items-center gap-2 truncate text-zinc-600 font-mono text-[11px]">
               <span class="text-zinc-800 font-semibold">[LOG]</span>
-              <span id="log-message" class="truncate">Step 0: Initial network state loaded. Click 'Start Simulation' or 'Step Forward'.</span>
+              <span id="log-message" class="truncate">Setup Mode: Initializing network...</span>
             </div>
             <div id="convergence-badge" class="shrink-0 ml-3 text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
               <i class="fa-solid fa-check text-[10px]"></i> Converged
@@ -186,8 +206,8 @@
       </div>
     </section>
 
-    <!-- Side Panel: Node Routing Tables (Right) -->
-    <aside class="w-96 bg-white border border-zinc-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden shrink-0 z-10">
+    <!-- Side Panel: Node Routing Tables (Right) - HIDDEN initially in Setup Mode -->
+    <aside id="routing-tables-panel" class="hidden w-96 bg-white border border-zinc-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden shrink-0 z-10">
       <!-- Panel Header -->
       <div class="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -195,7 +215,7 @@
           <h2 class="font-semibold text-xs tracking-tight text-[#1E293B]">Routing Tables</h2>
         </div>
         <span id="node-count-badge" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 border border-zinc-200">
-          4 Nodes
+          0 Nodes
         </span>
       </div>
 
@@ -206,7 +226,7 @@
 
       <!-- Scrollable List of Tables for Each Node -->
       <div id="routing-tables-container" class="flex-1 overflow-y-auto p-3.5 space-y-3">
-        <!-- Tables will be dynamically injected here -->
+        <!-- Tables will be dynamically injected here upon starting simulation -->
       </div>
     </aside>
 
@@ -214,45 +234,145 @@
 
   <!-- Bottom Control Strip -->
   <footer class="h-16 bg-white border border-zinc-200 rounded-xl px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
-    <!-- Left actions: Simulation triggers -->
-    <div class="flex items-center space-x-2.5">
-      <!-- Warm matte amber Pause/Start simulation button -->
-      <button id="btn-start-simulation" class="px-4 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-        <i id="sim-play-icon" class="fa-solid fa-play"></i>
-        <span id="sim-btn-text">Start Simulation</span>
-      </button>
+    
+    <!-- 1. Setup Mode Controls (Visible in Setup Mode) -->
+    <div id="setup-control-strip" class="w-full flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700">
+          <i class="fa-solid fa-diagram-project text-amber-600 text-xs"></i>
+          <span>Topology Setup</span>
+        </span>
+        <span id="setup-hint-text" class="text-xs text-zinc-500 font-mono">
+          Click two nodes to create a link. Connect at least 3 nodes to begin.
+        </span>
+      </div>
 
-      <!-- Minimal border-only Step Forward button -->
-      <button id="btn-step-forward" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-forward-step text-zinc-400"></i>
-        <span>Step Forward</span>
-      </button>
+      <div class="flex items-center gap-2.5">
+        <button id="btn-reconfigure-nodes" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-sliders text-zinc-400"></i>
+          <span>Change Node Count</span>
+        </button>
+
+        <!-- Start Simulation Button in Setup Mode: ONLY SHOWN when >= 3 nodes connected -->
+        <button id="btn-start-simulation-setup" class="hidden px-5 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-play"></i>
+          <span>Start Simulation</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Center Speed Slider -->
-    <div class="flex items-center gap-2.5 text-xs text-zinc-500 font-mono">
-      <span>Speed:</span>
-      <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-24 cursor-pointer">
-      <span id="speed-label" class="text-zinc-500 w-10 text-right">0.9s</span>
+    <!-- 2. Simulation Mode Controls (Revealed after starting simulation) -->
+    <div id="simulation-control-strip" class="hidden w-full flex items-center justify-between">
+      <!-- Left actions: Simulation triggers -->
+      <div class="flex items-center space-x-2.5">
+        <!-- Warm matte amber Pause/Start simulation button -->
+        <button id="btn-start-simulation" class="px-4 py-2 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i id="sim-play-icon" class="fa-solid fa-play"></i>
+          <span id="sim-btn-text">Start Simulation</span>
+        </button>
+
+        <!-- Minimal border-only Step Forward button -->
+        <button id="btn-step-forward" class="px-3.5 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-forward-step text-zinc-400"></i>
+          <span>Step Forward</span>
+        </button>
+      </div>
+
+      <!-- Center Speed Slider -->
+      <div class="flex items-center gap-2.5 text-xs text-zinc-500 font-mono">
+        <span>Speed:</span>
+        <input id="sim-speed-range" type="range" min="300" max="2500" value="900" step="100" class="w-24 cursor-pointer">
+        <span id="speed-label" class="text-zinc-500 w-10 text-right">0.9s</span>
+      </div>
+
+      <!-- Right actions: Add Node & Break Link -->
+      <div class="flex items-center space-x-2.5">
+        <button id="btn-add-node" class="px-3.5 py-2 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-plus text-zinc-300"></i>
+          <span>Add Node</span>
+        </button>
+
+        <button id="btn-break-link" class="px-3.5 py-2 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-xmark text-white"></i>
+          <span>Break Link</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Right actions: Add Node & Break Link -->
-    <div class="flex items-center space-x-2.5">
-      <!-- Deep slate Add Node button -->
-      <button id="btn-add-node" class="px-3.5 py-2 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-plus text-zinc-300"></i>
-        <span>Add Node</span>
-      </button>
-
-      <!-- Desaturated dark-red Break Link button -->
-      <button id="btn-break-link" class="px-3.5 py-2 rounded-lg bg-[#991B1B] hover:bg-[#7F1D1D] text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-xmark text-white"></i>
-        <span>Break Link</span>
-      </button>
-    </div>
   </footer>
 
-  <!-- Modal: Add Node -->
+  <!-- Modal 1: Initial Setup Modal (Shown on Load) -->
+  <div id="modal-initial-setup" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center">
+    <div class="bg-white w-full max-w-sm rounded-xl p-6 border border-zinc-200 shadow-xl">
+      <div class="flex items-center gap-3 pb-3 border-b border-zinc-100 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-zinc-100 text-[#1E293B] flex items-center justify-center text-sm shadow-xs">
+          <i class="fa-solid fa-network-wired"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-sm text-[#1E293B]">Setup Network Topology</h3>
+          <p class="text-[11px] text-zinc-500">Configure initial routers for simulation</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-zinc-700 mb-1.5">
+            Number of Initial Nodes <span class="text-zinc-400 font-normal">(Minimum 3)</span>
+          </label>
+          <input id="setup-node-count" type="number" min="3" max="12" value="4" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:border-[#1E293B] focus:ring-1 focus:ring-[#1E293B] font-mono">
+          <p class="text-[11px] text-zinc-400 mt-1">
+            Creates independent routing nodes (e.g. 4 nodes: A, B, C, D).
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2.5 mt-6 pt-3 border-t border-zinc-100">
+        <button id="modal-setup-confirm" class="w-full py-2.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5">
+          <span>Generate Nodes</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Enter Link Cost Modal (When user clicks two nodes to connect them) -->
+  <div id="modal-link-cost" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+    <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded bg-zinc-100 text-[#1E293B] flex items-center justify-center text-xs">
+            <i class="fa-solid fa-link"></i>
+          </div>
+          <h3 class="font-semibold text-sm text-[#1E293B]">Connect Nodes</h3>
+        </div>
+        <button id="modal-link-cost-close" class="text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5">
+        <div class="bg-zinc-50 px-3 py-2 rounded-lg border border-zinc-100 text-xs text-zinc-600 flex items-center justify-between font-mono">
+          <span>Connection:</span>
+          <span class="font-bold text-[#1E293B]">
+            Node <span id="link-source-label"></span> ⟷ Node <span id="link-target-label"></span>
+          </span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-700 mb-1">Enter Link Cost</label>
+          <input id="link-cost-input" type="number" min="1" max="99" value="2" class="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-800 focus:outline-none focus:border-[#1E293B] focus:ring-1 focus:ring-[#1E293B] font-mono">
+          <p class="text-[11px] text-zinc-400 mt-1">Link metric / weight for Distance Vector shortest path calculation.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2.5 mt-5 pt-3 border-t border-zinc-100">
+        <button id="modal-link-cost-cancel" class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition cursor-pointer">Cancel</button>
+        <button id="modal-link-cost-confirm" class="px-3.5 py-1.5 rounded-lg bg-[#1E293B] hover:bg-zinc-900 text-white font-medium text-xs transition shadow-xs cursor-pointer">Connect Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Add Node (Simulation Mode) -->
   <div id="modal-add-node" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
     <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
       <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
@@ -293,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Modal: Break Link -->
+  <!-- Modal 4: Break Link (Simulation Mode) -->
   <div id="modal-break-link" class="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
     <div class="bg-white w-full max-w-sm rounded-xl p-5 border border-zinc-200 shadow-xl">
       <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
@@ -329,6 +449,13 @@
 
   <!-- Distance Vector Simulator Logic -->
   <script>
+    // --- Mode State ---
+    // 'setup': empty canvas, click two nodes to create links, tables hidden
+    // 'simulation': topology locked, tables revealed, simulation controls active
+    let appMode = 'setup';
+    let selectedNodeForLink = null;
+    let pendingLinkNodes = null; // { from, to }
+
     // --- Simulator State & Data ---
     const INF = 999;
     let stepCount = 0;
@@ -338,13 +465,8 @@
     let physicsEnabled = true;
 
     // Topology representation
-    let nodesList = ['A', 'B', 'C', 'D'];
-    let edgesList = [
-      { from: 'A', to: 'B', cost: 1, broken: false },
-      { from: 'C', to: 'B', cost: 2, broken: false },
-      { from: 'D', to: 'C', cost: 1, broken: false },
-      { from: 'A', to: 'D', cost: INF, broken: true }
-    ];
+    let nodesList = [];
+    let edgesList = [];
 
     // Routing Tables structure:
     let routingTables = {};
@@ -352,9 +474,24 @@
 
     // State Comparison Reference (acting like usePrevious hook / ref)
     let prevRoutingTables = null;
-    let updatedRowKeys = new Set(); // Stores '${nodeId}-${destId}' of updated rows
+    let updatedRowKeys = new Set();
     let flashFadeTimer = null;
 
+    // Vis.js references
+    let network = null;
+    let visNodes = null;
+    let visEdges = null;
+
+    // Selected edge tracking for 'Break Link' action
+    let selectedEdge = null;
+
+    // WebSocket state
+    let ws = null;
+    let isBackendConnected = false;
+    let reconnectTimer = null;
+    const WS_URL = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + (window.location.host || 'localhost:8000') + '/ws';
+
+    // Deep clone helper
     function deepCloneTables(tables) {
       if (!tables) return null;
       const clone = {};
@@ -370,6 +507,7 @@
       return clone;
     }
 
+    // Compare new routing tables against previous state ref
     function compareAndComputeUpdates(newTables) {
       const changedKeys = new Set();
       if (!prevRoutingTables) {
@@ -388,7 +526,6 @@
           const prevNextHop = prevEntry.nextHop || prevEntry.next_hop || '—';
           const newNextHop = newEntry.nextHop || newEntry.next_hop || '—';
 
-          // Detect change in Next Hop or Cost
           if (prevCost !== newCost || prevNextHop !== newNextHop) {
             changedKeys.add(`${node}-${dest}`);
           }
@@ -403,19 +540,12 @@
         flashFadeTimer = null;
       }
 
-      // 1. Compare new routing tables against previous state ref
       updatedRowKeys = compareAndComputeUpdates(newTables);
-
-      // 2. Set current state and re-render routing tables with row highlights
       routingTables = newTables;
       renderAllRoutingTables();
-
-      // 3. Update previous state reference for the next cycle
       prevRoutingTables = deepCloneTables(newTables);
 
-      // 4. Fade Effect vs. Manual Step Persistence:
-      // In auto-play mode: flash highlight and smoothly fade back after 700ms
-      // In manual step mode: KEEP highlight visible until the user triggers the next step
+      // Auto-play: fade out after 700ms. Manual step: persists visible.
       if (isAutoRunning && updatedRowKeys.size > 0) {
         flashFadeTimer = setTimeout(() => {
           updatedRowKeys.forEach(key => {
@@ -430,186 +560,199 @@
       }
     }
 
-    // Vis.js references
-    let network = null;
-    let visNodes = null;
-    let visEdges = null;
-
-    // Selected edge tracking for 'Break Link' action
-    let selectedEdge = null;
-
-    // WebSocket state
-    let ws = null;
-    let isBackendConnected = false;
-    let reconnectTimer = null;
-    const WS_URL = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + (window.location.host || 'localhost:8000') + '/ws';
-
-    // Initialize Network and Algorithm
+    // ==========================================
+    // Lifecycle: DOM Ready
+    // ==========================================
     window.addEventListener('DOMContentLoaded', () => {
       initNetwork();
-      initRoutingTables();
-      renderAllRoutingTables();
       setupEventListeners();
       initWebSocket();
+
+      // On load, start in Setup Mode and display the Setup Modal
+      openInitialSetupModal();
     });
 
     // ==========================================
-    // 1. WebSocket Listener & Error Handling
+    // 1. Setup Mode Functions
     // ==========================================
-    function initWebSocket() {
-      updateBackendStatus(false, 'Connecting...');
+    function openInitialSetupModal() {
+      appMode = 'setup';
+      selectedNodeForLink = null;
+      pendingLinkNodes = null;
 
-      try {
-        ws = new WebSocket(WS_URL);
+      // Ensure canvas is empty on load
+      visNodes.clear();
+      visEdges.clear();
+      nodesList = [];
+      edgesList = [];
 
-        ws.onopen = () => {
-          isBackendConnected = true;
-          updateBackendStatus(true, 'Connected');
-          setLogMessage('WebSocket connected to backend. Real-time Bellman-Ford vectors active.');
-          if (reconnectTimer) {
-            clearTimeout(reconnectTimer);
-            reconnectTimer = null;
-          }
-        };
+      // Hide routing tables panel
+      document.getElementById('routing-tables-panel').classList.add('hidden');
+      document.getElementById('setup-control-strip').classList.remove('hidden');
+      document.getElementById('simulation-control-strip').classList.add('hidden');
+      document.getElementById('btn-start-simulation-setup').classList.add('hidden');
 
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data && data.type === 'state_update') {
-              handleBackendStateUpdate(data);
-            }
-          } catch (err) {
-            console.error('Error parsing backend WebSocket message:', err);
-          }
-        };
+      document.getElementById('mode-text').textContent = 'Setup';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 text-xs font-mono text-[#1E293B]';
 
-        ws.onclose = () => {
-          isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected');
-          scheduleReconnect();
-        };
+      document.getElementById('setup-canvas-hints').classList.remove('hidden');
+      document.getElementById('sim-canvas-hints').classList.add('hidden');
 
-        ws.onerror = () => {
-          isBackendConnected = false;
-          updateBackendStatus(false, 'Disconnected');
-        };
-      } catch (e) {
-        isBackendConnected = false;
-        updateBackendStatus(false, 'Disconnected');
-        scheduleReconnect();
-      }
+      setLogMessage('Setup Mode: Please enter the number of initial nodes in the modal.');
+      document.getElementById('modal-initial-setup').classList.remove('hidden');
     }
 
-    function scheduleReconnect() {
-      if (!reconnectTimer) {
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null;
-          initWebSocket();
-        }, 2000);
+    function confirmGenerateNodes() {
+      const input = document.getElementById('setup-node-count');
+      const count = parseInt(input.value, 10);
+
+      if (isNaN(count) || count < 3) {
+        alert('Please enter at least 3 nodes (Minimum 3).');
+        return;
       }
+      if (count > 26) {
+        alert('Maximum supported nodes is 26 (A-Z).');
+        return;
+      }
+
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      nodesList = alphabet.slice(0, count).split('');
+      edgesList = [];
+
+      visNodes.clear();
+      visEdges.clear();
+
+      // Arrange nodes in a neat circle
+      const radius = Math.min(220, 45 * count);
+      const initialNodesData = nodesList.map((id, index) => {
+        const angle = (2 * Math.PI * index) / count - Math.PI / 2;
+        const x = Math.round(radius * Math.cos(angle));
+        const y = Math.round(radius * Math.sin(angle));
+        const nodeObj = formatNodeStyle({ id, label: `Node ${id}` });
+        nodeObj.x = x;
+        nodeObj.y = y;
+        return nodeObj;
+      });
+
+      visNodes.add(initialNodesData);
+
+      document.getElementById('modal-initial-setup').classList.add('hidden');
+      updateSetupProgressUI();
+
+      setLogMessage(`Setup Mode: ${count} nodes created. Click on any two nodes to create a link.`);
+      network.fit({ animation: { duration: 500 } });
     }
 
-    function updateBackendStatus(connected, text) {
-      const dot = document.getElementById('backend-dot');
-      const label = document.getElementById('backend-status-text');
-      if (!dot || !label) return;
+    function getConnectedNodesCount() {
+      const connected = new Set();
+      edgesList.forEach(e => {
+        connected.add(e.from);
+        connected.add(e.to);
+      });
+      return connected.size;
+    }
 
-      label.textContent = text;
-      if (connected) {
+    function updateSetupProgressUI() {
+      const connectedCount = getConnectedNodesCount();
+      const dot = document.getElementById('setup-progress-dot');
+      const text = document.getElementById('setup-progress-text');
+      const hint = document.getElementById('setup-hint-text');
+      const startSimBtn = document.getElementById('btn-start-simulation-setup');
+
+      if (connectedCount >= 3) {
         dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-        label.className = 'text-xs text-zinc-800 font-mono';
+        text.textContent = `Connected: ${connectedCount} nodes (Ready to simulate!)`;
+        hint.textContent = `Ready! At least 3 nodes are connected. Click 'Start Simulation' to lock topology.`;
+        // Reveal 'Start Simulation' button once at least 3 nodes are connected
+        startSimBtn.classList.remove('hidden');
       } else {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
-        label.className = 'text-xs text-zinc-500 font-mono';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
+        text.textContent = `Connected: ${connectedCount} / 3 nodes (Minimum 3 needed)`;
+        hint.textContent = `Click two nodes to create a link. Connect at least 3 nodes to begin (${connectedCount}/3).`;
+        startSimBtn.classList.add('hidden');
       }
     }
 
-    function sendBackendAction(actionObj) {
-      if (isBackendConnected && ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(actionObj));
-        return true;
-      }
-      return false;
+    function openLinkCostModal(source, target) {
+      pendingLinkNodes = { from: source, to: target };
+      document.getElementById('link-source-label').textContent = source;
+      document.getElementById('link-target-label').textContent = target;
+      document.getElementById('link-cost-input').value = '2';
+      document.getElementById('modal-link-cost').classList.remove('hidden');
     }
 
-    // ==========================================
-    // 2. State & Graph Synchronization
-    // ==========================================
-    function handleBackendStateUpdate(data) {
-      stepCount = data.step || 0;
-      updateStepUI(stepCount);
+    function confirmCreateLink() {
+      if (!pendingLinkNodes) return;
+      const costInput = document.getElementById('link-cost-input');
+      const cost = parseInt(costInput.value, 10) || 1;
 
-      if (data.converged) {
-        setConvergenceStatus(true, "Converged");
-      } else {
-        setConvergenceStatus(false, data.running ? "Propagating" : "Paused");
+      const newEdge = {
+        from: pendingLinkNodes.from,
+        to: pendingLinkNodes.to,
+        cost: cost,
+        broken: false
+      };
+
+      edgesList.push(newEdge);
+      const edgeIndex = edgesList.length - 1;
+      visEdges.add(formatEdgeStyle(newEdge, edgeIndex));
+
+      document.getElementById('modal-link-cost').classList.add('hidden');
+      setLogMessage(`Created link between Node ${newEdge.from} ⟷ Node ${newEdge.to} with Cost ${newEdge.cost}.`);
+
+      pendingLinkNodes = null;
+      updateSetupProgressUI();
+    }
+
+    function switchToSimulationMode() {
+      const connectedCount = getConnectedNodesCount();
+      if (connectedCount < 3) {
+        alert('Please connect at least 3 nodes before starting the simulation.');
+        return;
       }
-      updatePlayButtonUI(data.running);
 
-      if (data.latest_log) {
-        setLogMessage(data.latest_log);
-      }
+      appMode = 'simulation';
+      selectedNodeForLink = null;
 
-      if (data.nodes && Array.isArray(data.nodes)) {
-        const newNodesList = data.nodes.map(n => n.id);
-        const addedNodes = newNodesList.filter(id => !nodesList.includes(id));
-        if (addedNodes.length > 0 || newNodesList.length !== nodesList.length) {
-          nodesList = newNodesList;
-          data.nodes.forEach(n => {
-            if (!visNodes.get(n.id)) {
-              visNodes.add(formatNodeStyle(n));
-            }
-          });
-        }
-      }
+      // 1. Reveal Routing Tables panel
+      document.getElementById('routing-tables-panel').classList.remove('hidden');
 
-      if (data.edges && Array.isArray(data.edges)) {
-        edgesList = data.edges;
-        edgesList.forEach((e, idx) => {
-          const edgeId = idx;
-          const formatted = formatEdgeStyle(e, edgeId);
-          if (visEdges.get(edgeId)) {
-            visEdges.update(formatted);
-          } else {
-            visEdges.add(formatted);
-          }
+      // 2. Switch bottom controls
+      document.getElementById('setup-control-strip').classList.add('hidden');
+      document.getElementById('simulation-control-strip').classList.remove('hidden');
+
+      // 3. Update status badges
+      document.getElementById('mode-text').textContent = 'Simulation';
+      document.getElementById('mode-badge').className = 'flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-xs font-mono text-emerald-800';
+
+      document.getElementById('setup-canvas-hints').classList.add('hidden');
+      document.getElementById('sim-canvas-hints').classList.remove('hidden');
+
+      // 4. Initialize routing tables & baseline
+      initRoutingTables();
+      renderAllRoutingTables();
+
+      // 5. Synchronize with backend
+      if (isBackendConnected) {
+        sendBackendAction({
+          action: 'set_topology',
+          nodes: nodesList,
+          edges: edgesList
         });
       }
 
-      if (data.routing_tables) {
-        processRoutingTableUpdate(data.routing_tables, !!data.running);
-      }
+      setLogMessage(`Topology locked: Simulation Mode active with ${nodesList.length} nodes and ${edgesList.length} links.`);
+      network.fit({ animation: { duration: 500 } });
     }
 
-    function updatePlayButtonUI(running) {
-      isRunning = running;
-      const btnText = document.getElementById('sim-btn-text');
-      const btnIcon = document.getElementById('sim-play-icon');
-
-      if (isRunning) {
-        btnText.textContent = 'Pause Simulation';
-        btnIcon.className = 'fa-solid fa-pause';
-      } else {
-        btnText.textContent = 'Start Simulation';
-        btnIcon.className = 'fa-solid fa-play';
-      }
-    }
-
-    // Vis.js Network Setup matching image_1.png
+    // ==========================================
+    // 2. Vis.js Setup & Click Handling
+    // ==========================================
     function initNetwork() {
       const container = document.getElementById('network-canvas');
 
-      const initialNodesData = [
-        { id: 'A', label: 'Node A' },
-        { id: 'B', label: 'Node B' },
-        { id: 'C', label: 'Node C' },
-        { id: 'D', label: 'Node D' }
-      ].map(n => formatNodeStyle(n));
-
-      const initialEdgesData = edgesList.map((e, idx) => formatEdgeStyle(e, idx));
-
-      visNodes = new vis.DataSet(initialNodesData);
-      visEdges = new vis.DataSet(initialEdgesData);
+      visNodes = new vis.DataSet([]);
+      visEdges = new vis.DataSet([]);
 
       const data = { nodes: visNodes, edges: visEdges };
 
@@ -681,10 +824,64 @@
 
       network = new vis.Network(container, data, options);
 
+      // Node and Edge click handling
       network.on('click', (params) => {
-        if (params.edges.length > 0 && params.nodes.length === 0) {
-          const edgeId = params.edges[0];
-          selectEdgeForAction(edgeId);
+        // --- A. Setup Mode: Click two nodes to connect ---
+        if (appMode === 'setup') {
+          if (params.nodes.length > 0) {
+            const clickedNodeId = params.nodes[0];
+
+            if (!selectedNodeForLink) {
+              // Clicked first node
+              selectedNodeForLink = clickedNodeId;
+              visNodes.update({
+                id: clickedNodeId,
+                color: { background: '#FEF3C7', border: '#D97706' }
+              });
+              setLogMessage(`Selected Node ${clickedNodeId}. Click a second node to connect.`);
+            } else if (selectedNodeForLink === clickedNodeId) {
+              // Clicked same node again: deselect
+              visNodes.update(formatNodeStyle({ id: clickedNodeId }));
+              selectedNodeForLink = null;
+              setLogMessage(`Deselected Node ${clickedNodeId}.`);
+            } else {
+              // Clicked second node: connect them!
+              const sourceNode = selectedNodeForLink;
+              const targetNode = clickedNodeId;
+
+              visNodes.update(formatNodeStyle({ id: sourceNode }));
+              selectedNodeForLink = null;
+
+              // Check if link already exists
+              const existingLink = edgesList.find(e => 
+                (e.from === sourceNode && e.to === targetNode) || (e.from === targetNode && e.to === sourceNode)
+              );
+
+              if (existingLink) {
+                setLogMessage(`Link between Node ${sourceNode} ⟷ Node ${targetNode} already exists!`);
+                return;
+              }
+
+              // Open modal prompting for link cost
+              openLinkCostModal(sourceNode, targetNode);
+            }
+          } else {
+            // Clicked empty canvas: clear selection
+            if (selectedNodeForLink) {
+              visNodes.update(formatNodeStyle({ id: selectedNodeForLink }));
+              selectedNodeForLink = null;
+              setLogMessage('Deselected node. Click any node to connect.');
+            }
+          }
+          return;
+        }
+
+        // --- B. Simulation Mode: Click edge to select for Break Link ---
+        if (appMode === 'simulation') {
+          if (params.edges.length > 0 && params.nodes.length === 0) {
+            const edgeId = params.edges[0];
+            selectEdgeForAction(edgeId);
+          }
         }
       });
     }
@@ -717,7 +914,6 @@
       }
     }
 
-    // Vis.js Node styling: White background with dark charcoal border (#1E293B)
     function formatNodeStyle(node) {
       return {
         id: node.id,
@@ -754,7 +950,6 @@
       };
     }
 
-    // Vis.js Edge styling: Thin steel-gray lines, dashed brick-red (#991B1B) for severed
     function formatEdgeStyle(edge, id) {
       const edgeId = id !== undefined ? id : `${edge.from}-${edge.to}`;
       const isBroken = edge.broken;
@@ -786,7 +981,7 @@
     }
 
     // ==========================================
-    // 3. Routing Tables Rendering (Side Panel)
+    // 3. Routing Tables & Algorithm
     // ==========================================
     function initRoutingTables() {
       stepCount = 0;
@@ -813,7 +1008,6 @@
       prevRoutingTables = deepCloneTables(routingTables);
       updatedRowKeys.clear();
       setConvergenceStatus(true, "Converged");
-      setLogMessage(`Step 0: Initial network state loaded. Click 'Start Simulation' or 'Step Forward'.`);
     }
 
     function getDirectLink(u, v) {
@@ -833,7 +1027,6 @@
       return neighbors;
     }
 
-    // Dynamically clear and rebuild HTML routing tables in right sidebar
     function renderAllRoutingTables() {
       const container = document.getElementById('routing-tables-container');
       if (!container) return;
@@ -922,35 +1115,136 @@
     }
 
     // ==========================================
-    // 4. Control Panel Actions
+    // 4. WebSocket & Server Synchronization
     // ==========================================
-    function handleBreakLinkButtonClick() {
-      if (selectedEdge) {
-        const payload = {
-          action: 'break_link',
-          source: selectedEdge.source,
-          target: selectedEdge.target
+    function initWebSocket() {
+      updateBackendStatus(false, 'Connecting...');
+
+      try {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+          isBackendConnected = true;
+          updateBackendStatus(true, 'Connected');
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
         };
 
-        if (isBackendConnected) {
-          sendBackendAction(payload);
-          setLogMessage(`Sent Break Link action for ${selectedEdge.source} ⟷ ${selectedEdge.target}.`);
-        } else {
-          toggleLinkStateById(selectedEdge.id);
-        }
-        return;
-      }
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && data.type === 'state_update') {
+              // Only apply backend simulation updates when actively in simulation mode
+              if (appMode === 'simulation') {
+                handleBackendStateUpdate(data);
+              }
+            }
+          } catch (err) {
+            console.error('Error parsing backend WebSocket message:', err);
+          }
+        };
 
-      if (edgesList.length > 0) {
-        const first = edgesList[0];
-        selectedEdge = { source: first.from, target: first.to, id: 0, broken: first.broken };
-        updateBreakLinkButtonUI();
-        openBreakLinkModal();
-      } else {
-        openBreakLinkModal();
+        ws.onclose = () => {
+          isBackendConnected = false;
+          updateBackendStatus(false, 'Disconnected');
+          scheduleReconnect();
+        };
+
+        ws.onerror = () => {
+          isBackendConnected = false;
+          updateBackendStatus(false, 'Disconnected');
+        };
+      } catch (e) {
+        isBackendConnected = false;
+        updateBackendStatus(false, 'Disconnected');
+        scheduleReconnect();
       }
     }
 
+    function scheduleReconnect() {
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          initWebSocket();
+        }, 2000);
+      }
+    }
+
+    function updateBackendStatus(connected, text) {
+      const dot = document.getElementById('backend-dot');
+      const label = document.getElementById('backend-status-text');
+      if (!dot || !label) return;
+
+      label.textContent = text;
+      if (connected) {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        label.className = 'text-xs text-zinc-800 font-mono';
+      } else {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
+        label.className = 'text-xs text-zinc-500 font-mono';
+      }
+    }
+
+    function sendBackendAction(actionObj) {
+      if (isBackendConnected && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(actionObj));
+        return true;
+      }
+      return false;
+    }
+
+    function handleBackendStateUpdate(data) {
+      stepCount = data.step || 0;
+      updateStepUI(stepCount);
+
+      if (data.converged) {
+        setConvergenceStatus(true, "Converged");
+      } else {
+        setConvergenceStatus(false, data.running ? "Propagating" : "Paused");
+      }
+      updatePlayButtonUI(data.running);
+
+      if (data.latest_log) {
+        setLogMessage(data.latest_log);
+      }
+
+      if (data.edges && Array.isArray(data.edges)) {
+        edgesList = data.edges;
+        edgesList.forEach((e, idx) => {
+          const edgeId = idx;
+          const formatted = formatEdgeStyle(e, edgeId);
+          if (visEdges.get(edgeId)) {
+            visEdges.update(formatted);
+          } else {
+            visEdges.add(formatted);
+          }
+        });
+      }
+
+      if (data.routing_tables) {
+        processRoutingTableUpdate(data.routing_tables, !!data.running);
+      }
+    }
+
+    function updatePlayButtonUI(running) {
+      isRunning = running;
+      const btnText = document.getElementById('sim-btn-text');
+      const btnIcon = document.getElementById('sim-play-icon');
+
+      if (isRunning) {
+        btnText.textContent = 'Pause Simulation';
+        btnIcon.className = 'fa-solid fa-pause';
+      } else {
+        btnText.textContent = 'Start Simulation';
+        btnIcon.className = 'fa-solid fa-play';
+      }
+    }
+
+    // ==========================================
+    // 5. Simulation Actions & Step Forward
+    // ==========================================
     function toggleSimulation() {
       if (isBackendConnected) {
         sendBackendAction({ action: 'toggle' });
@@ -1048,6 +1342,33 @@
       }
     }
 
+    function handleBreakLinkButtonClick() {
+      if (selectedEdge) {
+        const payload = {
+          action: 'break_link',
+          source: selectedEdge.source,
+          target: selectedEdge.target
+        };
+
+        if (isBackendConnected) {
+          sendBackendAction(payload);
+          setLogMessage(`Sent Break Link action for ${selectedEdge.source} ⟷ ${selectedEdge.target}.`);
+        } else {
+          toggleLinkStateById(selectedEdge.id);
+        }
+        return;
+      }
+
+      if (edgesList.length > 0) {
+        const first = edgesList[0];
+        selectedEdge = { source: first.from, target: first.to, id: 0, broken: first.broken };
+        updateBreakLinkButtonUI();
+        openBreakLinkModal();
+      } else {
+        openBreakLinkModal();
+      }
+    }
+
     function toggleLinkStateById(edgeId) {
       let edgeObj = edgesList.find((e, idx) => idx === edgeId || `${e.from}-${e.to}` === edgeId || `${e.to}-${e.from}` === edgeId);
       if (!edgeObj) {
@@ -1075,45 +1396,6 @@
         setConvergenceStatus(false, "Modified");
         stepForwardDistanceVector();
       }
-    }
-
-    function resetToInitialLoop() {
-      if (flashFadeTimer) {
-        clearTimeout(flashFadeTimer);
-        flashFadeTimer = null;
-      }
-      updatedRowKeys.clear();
-      prevRoutingTables = null;
-
-      if (isBackendConnected) {
-        sendBackendAction({ action: 'reset' });
-        selectedEdge = null;
-        updateBreakLinkButtonUI();
-        return;
-      }
-
-      if (isRunning) toggleSimulation();
-
-      nodesList = ['A', 'B', 'C', 'D'];
-      edgesList = [
-        { from: 'A', to: 'B', cost: 1, broken: false },
-        { from: 'C', to: 'B', cost: 2, broken: false },
-        { from: 'D', to: 'C', cost: 1, broken: false },
-        { from: 'A', to: 'D', cost: INF, broken: true }
-      ];
-
-      selectedEdge = null;
-      updateBreakLinkButtonUI();
-
-      visNodes.clear();
-      visEdges.clear();
-
-      visNodes.add(nodesList.map(id => formatNodeStyle({ id, label: `Node ${id}` })));
-      visEdges.add(edgesList.map((e, idx) => formatEdgeStyle(e, idx)));
-
-      initRoutingTables();
-      renderAllRoutingTables();
-      network.fit({ animation: { duration: 500 } });
     }
 
     // Modal Handlers
@@ -1232,13 +1514,34 @@
       document.getElementById('modal-break-link').classList.add('hidden');
     }
 
-    // Event Listeners setup
+    // ==========================================
+    // 6. Event Listeners Setup
+    // ==========================================
     function setupEventListeners() {
+      // Initial Setup modal
+      document.getElementById('modal-setup-confirm').addEventListener('click', confirmGenerateNodes);
+      document.getElementById('btn-reconfigure-nodes').addEventListener('click', openInitialSetupModal);
+      document.getElementById('btn-reset-topology').addEventListener('click', openInitialSetupModal);
+
+      // Link cost modal
+      document.getElementById('modal-link-cost-confirm').addEventListener('click', confirmCreateLink);
+      document.getElementById('modal-link-cost-cancel').addEventListener('click', () => {
+        document.getElementById('modal-link-cost').classList.add('hidden');
+        pendingLinkNodes = null;
+      });
+      document.getElementById('modal-link-cost-close').addEventListener('click', () => {
+        document.getElementById('modal-link-cost').classList.add('hidden');
+        pendingLinkNodes = null;
+      });
+
+      // Switch to simulation button
+      document.getElementById('btn-start-simulation-setup').addEventListener('click', switchToSimulationMode);
+
+      // Simulation mode controls
       document.getElementById('btn-start-simulation').addEventListener('click', toggleSimulation);
       document.getElementById('btn-step-forward').addEventListener('click', stepForwardDistanceVector);
       document.getElementById('btn-add-node').addEventListener('click', openAddNodeModal);
       document.getElementById('btn-break-link').addEventListener('click', handleBreakLinkButtonClick);
-      document.getElementById('btn-reset-topology').addEventListener('click', resetToInitialLoop);
 
       // Speed control slider
       const speedSlider = document.getElementById('sim-speed-range');
