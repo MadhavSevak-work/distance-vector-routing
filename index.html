@@ -350,6 +350,86 @@
     let routingTables = {};
     let lastChanges = [];
 
+    // State Comparison Reference (acting like usePrevious hook / ref)
+    let prevRoutingTables = null;
+    let updatedRowKeys = new Set(); // Stores '${nodeId}-${destId}' of updated rows
+    let flashFadeTimer = null;
+
+    function deepCloneTables(tables) {
+      if (!tables) return null;
+      const clone = {};
+      for (const node in tables) {
+        clone[node] = {};
+        for (const dest in tables[node]) {
+          clone[node][dest] = {
+            cost: tables[node][dest].cost,
+            nextHop: tables[node][dest].nextHop || tables[node][dest].next_hop || '—'
+          };
+        }
+      }
+      return clone;
+    }
+
+    function compareAndComputeUpdates(newTables) {
+      const changedKeys = new Set();
+      if (!prevRoutingTables) {
+        return changedKeys;
+      }
+
+      for (const node in newTables) {
+        if (!prevRoutingTables[node]) continue;
+        for (const dest in newTables[node]) {
+          const prevEntry = prevRoutingTables[node][dest];
+          const newEntry = newTables[node][dest];
+          if (!prevEntry || !newEntry) continue;
+
+          const prevCost = prevEntry.cost;
+          const newCost = newEntry.cost;
+          const prevNextHop = prevEntry.nextHop || prevEntry.next_hop || '—';
+          const newNextHop = newEntry.nextHop || newEntry.next_hop || '—';
+
+          // Detect change in Next Hop or Cost
+          if (prevCost !== newCost || prevNextHop !== newNextHop) {
+            changedKeys.add(`${node}-${dest}`);
+          }
+        }
+      }
+      return changedKeys;
+    }
+
+    function processRoutingTableUpdate(newTables, isAutoRunning) {
+      if (flashFadeTimer) {
+        clearTimeout(flashFadeTimer);
+        flashFadeTimer = null;
+      }
+
+      // 1. Compare new routing tables against previous state ref
+      updatedRowKeys = compareAndComputeUpdates(newTables);
+
+      // 2. Set current state and re-render routing tables with row highlights
+      routingTables = newTables;
+      renderAllRoutingTables();
+
+      // 3. Update previous state reference for the next cycle
+      prevRoutingTables = deepCloneTables(newTables);
+
+      // 4. Fade Effect vs. Manual Step Persistence:
+      // In auto-play mode: flash highlight and smoothly fade back after 700ms
+      // In manual step mode: KEEP highlight visible until the user triggers the next step
+      if (isAutoRunning && updatedRowKeys.size > 0) {
+        flashFadeTimer = setTimeout(() => {
+          updatedRowKeys.forEach(key => {
+            const row = document.getElementById(`row-${key}`);
+            if (row) {
+              row.classList.remove('bg-amber-50', 'text-amber-900', 'font-medium');
+              row.classList.add('bg-transparent', 'text-zinc-700');
+            }
+          });
+          updatedRowKeys.clear();
+        }, 700);
+      }
+    }
+
     // Vis.js references
     let network = null;
     let visNodes = null;
@@ -497,8 +577,7 @@
       }
 
       if (data.routing_tables) {
-        routingTables = data.routing_tables;
-        renderAllRoutingTables();
+        processRoutingTableUpdate(data.routing_tables, !!data.running);
       }
     }
 
@@ -731,6 +810,8 @@
         });
       });
 
+      prevRoutingTables = deepCloneTables(routingTables);
+      updatedRowKeys.clear();
       setConvergenceStatus(true, "Converged");
       setLogMessage(`Step 0: Initial network state loaded. Click 'Start Simulation' or 'Step Forward'.`);
     }
@@ -791,14 +872,18 @@
           </thead>
           <tbody class="divide-y divide-zinc-100 text-[11px]">
             ${nodesList.map(destId => {
+              const rowKey = `${nodeId}-${destId}`;
+              const isUpdated = updatedRowKeys.has(rowKey);
               const rowData = routingTables[nodeId] ? routingTables[nodeId][destId] : { cost: INF, nextHop: '—', changed: false };
               const costDisplay = (rowData && rowData.cost >= INF) ? '<span class="text-[#991B1B] font-semibold">∞</span>' : (rowData ? rowData.cost : '—');
               const nextHopVal = rowData ? (rowData.nextHop || rowData.next_hop || '—') : '—';
               const nextHopDisplay = nextHopVal === '—' ? '<span class="text-zinc-400">—</span>' : `<span class="text-zinc-700 font-medium">${nextHopVal}</span>`;
-              const isUpdatedClass = (rowData && rowData.changed) ? 'bg-zinc-100 text-zinc-900 font-medium' : 'text-zinc-700';
+              const highlightClasses = isUpdated 
+                ? 'bg-amber-50 text-amber-900 font-medium' 
+                : 'bg-transparent text-zinc-700';
               
               return `
-                <tr class="transition-colors ${isUpdatedClass}">
+                <tr id="row-${rowKey}" class="transition-colors duration-700 ${highlightClasses}">
                   <td class="py-1.5 px-2 text-[#1E293B] font-medium">${destId}</td>
                   <td class="py-1.5 px-2">${nextHopDisplay}</td>
                   <td class="py-1.5 px-2 text-right font-medium text-zinc-800">${costDisplay}</td>
@@ -946,7 +1031,7 @@
         });
       });
 
-      renderAllRoutingTables();
+      processRoutingTableUpdate(routingTables, isRunning);
 
       if (anyChange) {
         setConvergenceStatus(false, "Propagating");
@@ -993,6 +1078,13 @@
     }
 
     function resetToInitialLoop() {
+      if (flashFadeTimer) {
+        clearTimeout(flashFadeTimer);
+        flashFadeTimer = null;
+      }
+      updatedRowKeys.clear();
+      prevRoutingTables = null;
+
       if (isBackendConnected) {
         sendBackendAction({ action: 'reset' });
         selectedEdge = null;
